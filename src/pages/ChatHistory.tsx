@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
@@ -9,6 +10,7 @@ import { Calendar, Clock, Search, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import ChatHistoryDetail from '@/components/consultant/ChatHistoryDetail';
+import { Json } from '@/integrations/supabase/types';
 
 interface ChatMessage {
   content: string;
@@ -22,6 +24,15 @@ interface SavedChat {
   chat_date: string;
   user_id: string;
   messages: ChatMessage[];
+}
+
+interface SavedChatResponse {
+  id: string;
+  title: string;
+  chat_date: string;
+  user_id: string;
+  messages: Json;
+  created_at: string;
 }
 
 const ChatHistory = () => {
@@ -51,7 +62,19 @@ const ChatHistory = () => {
         .order('chat_date', { ascending: false });
 
       if (error) throw error;
-      setSavedChats(data || []);
+      
+      // Transform the data to match SavedChat type
+      const formattedChats: SavedChat[] = (data || []).map((chat: SavedChatResponse) => ({
+        id: chat.id,
+        title: chat.title,
+        chat_date: chat.chat_date,
+        user_id: chat.user_id,
+        messages: Array.isArray(chat.messages) 
+          ? chat.messages as unknown as ChatMessage[]
+          : []
+      }));
+      
+      setSavedChats(formattedChats);
     } catch (error: any) {
       console.error('Error fetching saved chats:', error);
       toast({

@@ -15,6 +15,7 @@ interface SavedChat {
   id: string;
   title: string;
   chat_date: string;
+  user_id?: string;
   messages: ChatMessage[];
 }
 
