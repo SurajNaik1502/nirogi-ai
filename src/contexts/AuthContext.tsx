@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user) throw new Error("No user logged in");
 
       const { error } = await supabase
-        .from("profiles")
+        .from('profiles')
         .update(data)
         .eq("id", user.id);
 

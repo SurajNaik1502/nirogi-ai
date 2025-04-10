@@ -33,17 +33,19 @@ const Profile = () => {
 
       try {
         const { data, error } = await supabase
-          .from("profiles")
+          .from('profiles')
           .select("first_name, last_name, avatar_url")
           .eq("id", user.id)
           .single();
 
         if (error) throw error;
-        setProfile({
-          first_name: data.first_name || "",
-          last_name: data.last_name || "",
-          avatar_url: data.avatar_url,
-        });
+        if (data) {
+          setProfile({
+            first_name: data.first_name || "",
+            last_name: data.last_name || "",
+            avatar_url: data.avatar_url,
+          });
+        }
       } catch (error) {
         console.error("Error fetching profile:", error);
       }
@@ -85,7 +87,11 @@ const Profile = () => {
 
         if (uploadError) throw uploadError;
 
-        avatarUrl = `${supabase.supabaseUrl}/storage/v1/object/public/avatars/${filePath}`;
+        const { data: { publicUrl } } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(filePath);
+          
+        avatarUrl = publicUrl;
       }
 
       await updateProfile({

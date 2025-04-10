@@ -12,6 +12,9 @@ import MentalHealth from "./pages/MentalHealth";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
+import ChatHistory from "./pages/ChatHistory";
+import Diet from "./pages/Diet";
+import Exercise from "./pages/Exercise";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +41,21 @@ const App = () => (
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat-history" element={
+              <ProtectedRoute>
+                <ChatHistory />
+              </ProtectedRoute>
+            } />
+            <Route path="/diet" element={
+              <ProtectedRoute>
+                <Diet />
+              </ProtectedRoute>
+            } />
+            <Route path="/exercise" element={
+              <ProtectedRoute>
+                <Exercise />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
