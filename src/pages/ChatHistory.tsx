@@ -4,23 +4,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Search, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import ChatHistoryDetail from '@/components/consultant/ChatHistoryDetail';
 
+interface ChatMessage {
+  content: string;
+  sender: 'user' | 'bot';
+  timestamp: string;
+}
+
 interface SavedChat {
   id: string;
   title: string;
   chat_date: string;
   user_id: string;
-  messages: Array<{
-    content: string;
-    sender: 'user' | 'bot';
-    timestamp: string;
-  }>;
+  messages: ChatMessage[];
 }
 
 const ChatHistory = () => {

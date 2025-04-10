@@ -18,13 +18,6 @@ interface Message {
   timestamp: Date;
 }
 
-interface SavedChat {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-}
-
 const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -139,16 +132,18 @@ const ChatInterface: React.FC = () => {
         ? firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? '...' : '')
         : 'Health Consultation';
       
-      const lastMessage = messages[messages.length - 1].content;
+      // Format messages for saving to saved_chats table
+      const formattedMessages = messages.map(msg => ({
+        content: msg.content,
+        sender: msg.sender,
+        timestamp: msg.timestamp.toISOString()
+      }));
+      
       const { error } = await supabase.from('saved_chats').insert({
         user_id: user.id,
         title: chatTitle,
         chat_date: new Date().toISOString(),
-        messages: messages.map(msg => ({
-          content: msg.content,
-          sender: msg.sender,
-          timestamp: msg.timestamp
-        }))
+        messages: formattedMessages
       });
       
       if (error) throw error;
@@ -158,7 +153,7 @@ const ChatInterface: React.FC = () => {
         description: 'Your consultation has been saved successfully',
       });
       
-      // Offer to navigate to history
+      // Navigate to chat history
       navigate('/chat-history');
     } catch (error: any) {
       console.error('Error saving chat:', error);

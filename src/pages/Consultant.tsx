@@ -5,6 +5,8 @@ import ChatInterface from '@/components/consultant/ChatInterface';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Pill, Clock, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const Consultant: React.FC = () => {
   return (
@@ -30,51 +32,15 @@ const Consultant: React.FC = () => {
           
           <TabsContent value="history" className="pt-4">
             <Card className="glass-morphism">
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex justify-between items-start border-b border-white/10 pb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-health-blue" />
-                      <h3 className="font-medium">Yesterday, 15:30</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Discussed: Headache, fatigue, sore throat
-                    </p>
-                  </div>
-                  <button className="text-sm text-health-blue hover:underline">
-                    View Chat
-                  </button>
-                </div>
-                
-                <div className="flex justify-between items-start border-b border-white/10 pb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-health-blue" />
-                      <h3 className="font-medium">April 5, 2025, 10:15</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Discussed: Back pain, stretching exercises
-                    </p>
-                  </div>
-                  <button className="text-sm text-health-blue hover:underline">
-                    View Chat
-                  </button>
-                </div>
-                
-                <div className="flex justify-between items-start pb-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-health-blue" />
-                      <h3 className="font-medium">March 28, 2025, 19:45</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Discussed: Insomnia, sleep hygiene
-                    </p>
-                  </div>
-                  <button className="text-sm text-health-blue hover:underline">
-                    View Chat
-                  </button>
-                </div>
+              <CardContent className="pt-6 flex flex-col items-center justify-center p-8">
+                <Clock className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                <h3 className="text-xl font-medium text-center">View Your Chat History</h3>
+                <p className="text-muted-foreground text-center mt-2 mb-4">
+                  Access all your saved consultations in one place
+                </p>
+                <Button asChild>
+                  <Link to="/chat-history">Go to Chat History</Link>
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

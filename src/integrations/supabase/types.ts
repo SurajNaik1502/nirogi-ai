@@ -60,6 +60,33 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_chats: {
+        Row: {
+          chat_date: string
+          created_at: string
+          id: string
+          messages: Json
+          title: string
+          user_id: string
+        }
+        Insert: {
+          chat_date?: string
+          created_at?: string
+          id?: string
+          messages: Json
+          title: string
+          user_id: string
+        }
+        Update: {
+          chat_date?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
