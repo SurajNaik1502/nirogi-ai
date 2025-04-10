@@ -1,10 +1,9 @@
-
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import ChatInterface from '@/components/consultant/ChatInterface';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Pill, Clock, FileText } from 'lucide-react';
+import { FileText, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 

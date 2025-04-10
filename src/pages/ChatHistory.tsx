@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
@@ -44,6 +43,7 @@ const ChatHistory = () => {
 
     try {
       setIsLoading(true);
+      // Use typed query to get saved_chats
       const { data, error } = await supabase
         .from('saved_chats')
         .select('*')
