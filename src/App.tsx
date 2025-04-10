@@ -15,6 +15,11 @@ import Profile from "./pages/Profile";
 import ChatHistory from "./pages/ChatHistory";
 import Diet from "./pages/Diet";
 import Exercise from "./pages/Exercise";
+import MedicineTracker from "./pages/MedicineTracker";
+import Appointments from "./pages/Appointments";
+import ReportAnalyzer from "./pages/ReportAnalyzer";
+import HospitalTracker from "./pages/HospitalTracker";
+import SkinAnalysis from "./pages/SkinAnalysis";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +61,31 @@ const App = () => (
             <Route path="/exercise" element={
               <ProtectedRoute>
                 <Exercise />
+              </ProtectedRoute>
+            } />
+            <Route path="/skin-analysis" element={
+              <ProtectedRoute>
+                <SkinAnalysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/appointments" element={
+              <ProtectedRoute>
+                <Appointments />
+              </ProtectedRoute>
+            } />
+            <Route path="/medicine-tracker" element={
+              <ProtectedRoute>
+                <MedicineTracker />
+              </ProtectedRoute>
+            } />
+            <Route path="/report-analyzer" element={
+              <ProtectedRoute>
+                <ReportAnalyzer />
+              </ProtectedRoute>
+            } />
+            <Route path="/hospital-tracker" element={
+              <ProtectedRoute>
+                <HospitalTracker />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
