@@ -1,10 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, User, Bot, Mic, Plus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { generateHealthAdvice } from '@/services/geminiService';
 
 interface Message {
   id: string;
@@ -14,18 +18,108 @@ interface Message {
 }
 
 const ChatInterface: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: "Hello! I'm your virtual health consultant. How can I help you today?",
-      sender: 'bot',
-      timestamp: new Date(),
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   
-  const handleSendMessage = () => {
-    if (input.trim() === '') return;
+  useEffect(() => {
+    if (user) {
+      fetchChatHistory();
+    } else {
+      // Set default welcome message for not logged in users
+      setMessages([
+        {
+          id: '1',
+          content: "Hello! I'm your virtual health consultant. How can I help you today?",
+          sender: 'bot',
+          timestamp: new Date(),
+        }
+      ]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // Scroll to bottom whenever messages change
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const fetchChatHistory = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('health_chats')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      if (data.length === 0) {
+        // Add welcome message if no chat history
+        const welcomeMessage = {
+          id: '1',
+          content: "Hello! I'm your virtual health consultant. How can I help you today?",
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages([welcomeMessage]);
+        
+        // Save welcome message to database
+        await supabase.from('health_chats').insert({
+          user_id: user.id,
+          message: welcomeMessage.content,
+          sender: welcomeMessage.sender
+        });
+      } else {
+        // Format the retrieved messages
+        const formattedMessages = data.map(msg => ({
+          id: msg.id,
+          content: msg.message,
+          sender: msg.sender as 'user' | 'bot',
+          timestamp: new Date(msg.created_at)
+        }));
+        
+        setMessages(formattedMessages);
+      }
+    } catch (error: any) {
+      console.error('Error fetching chat history:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load chat history',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const saveMessageToDatabase = async (message: string, sender: 'user' | 'bot') => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase.from('health_chats').insert({
+        user_id: user.id,
+        message,
+        sender
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error saving message:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save message',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const handleSendMessage = async () => {
+    if (input.trim() === '' || isLoading) return;
     
     // Add user message
     const userMessage: Message = {
@@ -36,23 +130,38 @@ const ChatInterface: React.FC = () => {
     };
     
     setMessages((prev) => [...prev, userMessage]);
+    saveMessageToDatabase(userMessage.content, 'user');
     setInput('');
+    setIsLoading(true);
     
-    // Simulate bot response (in a real app, this would call your Gemini API)
-    setTimeout(() => {
+    try {
+      // Get response from Gemini API
+      const botResponse = await generateHealthAdvice(input);
+      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I understand you're experiencing these symptoms. Based on the information you've provided, it could be related to seasonal allergies. Would you like me to provide some self-care tips or recommend when you should see a doctor?",
+        content: botResponse,
         sender: 'bot',
         timestamp: new Date(),
       };
       
       setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+      saveMessageToDatabase(botMessage.content, 'bot');
+    } catch (error) {
+      console.error('Error getting health advice:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to get health advice. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSendMessage();
     }
   };
@@ -64,7 +173,7 @@ const ChatInterface: React.FC = () => {
         <p className="text-sm text-muted-foreground">Discuss your symptoms and get AI-powered health advice</p>
       </div>
       
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef as any}>
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -99,6 +208,21 @@ const ChatInterface: React.FC = () => {
               )}
             </div>
           ))}
+          
+          {isLoading && (
+            <div className="flex gap-3 justify-start">
+              <Avatar className="h-8 w-8 bg-health-purple flex items-center justify-center">
+                <Bot className="h-4 w-4" />
+              </Avatar>
+              <div className="glass-morphism max-w-[80%] rounded-lg p-3">
+                <div className="flex space-x-2">
+                  <div className="h-2 w-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="h-2 w-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="h-2 w-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
       
@@ -114,6 +238,7 @@ const ChatInterface: React.FC = () => {
             onKeyDown={handleKeyDown}
             placeholder="Type your symptoms or health question..."
             className="flex-1 bg-background/50"
+            disabled={isLoading}
           />
           
           <Button variant="outline" size="icon" className="rounded-full">
@@ -123,8 +248,8 @@ const ChatInterface: React.FC = () => {
           <Button
             onClick={handleSendMessage}
             size="icon"
-            disabled={input.trim() === ''}
-            className={`rounded-full ${input.trim() === '' ? 'bg-primary/50' : 'bg-health-blue hover:bg-health-blue/80'}`}
+            disabled={input.trim() === '' || isLoading}
+            className={`rounded-full ${input.trim() === '' || isLoading ? 'bg-primary/50' : 'bg-health-blue hover:bg-health-blue/80'}`}
           >
             <Send className="h-4 w-4" />
           </Button>
