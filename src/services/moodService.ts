@@ -30,7 +30,7 @@ export const fetchMoodEntries = async (userId: string, limit?: number) => {
     
     if (error) throw error;
     
-    return data as MoodEntry[];
+    return data as unknown as MoodEntry[];
   } catch (error) {
     console.error('Error fetching mood entries:', error);
     throw error;
@@ -66,7 +66,7 @@ export const createMoodEntry = async (entry: MoodEntryInput) => {
     
     if (error) throw error;
     
-    return { data: data[0] as MoodEntry, error: null };
+    return { data: data[0] as unknown as MoodEntry, error: null };
   } catch (error) {
     console.error('Error creating mood entry:', error);
     throw error;
@@ -85,7 +85,7 @@ export const getLatestMoodEntry = async (userId: string) => {
     
     if (error) throw error;
     
-    return data.length > 0 ? data[0] as MoodEntry : null;
+    return data.length > 0 ? (data[0] as unknown as MoodEntry) : null;
   } catch (error) {
     console.error('Error fetching latest mood entry:', error);
     throw error;

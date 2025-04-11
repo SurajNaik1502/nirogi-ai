@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { 
@@ -54,10 +53,7 @@ const MentalHealth: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      // Check if user can add a new mood entry and get latest mood
       checkMoodStatus();
-      
-      // Fetch journal entries
       loadJournalEntries();
     }
   }, [user]);
@@ -66,11 +62,9 @@ const MentalHealth: React.FC = () => {
     if (!user) return;
     
     try {
-      // Check if user can add a new mood entry
       const canAdd = await canAddMoodEntry(user.id);
       setCanSelectMood(canAdd);
       
-      // Get the latest mood entry
       const latest = await getLatestMoodEntry(user.id);
       setLastEntry(latest);
       

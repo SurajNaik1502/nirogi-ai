@@ -235,6 +235,27 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       medical_reports: {
         Row: {
           analysis_result: Json | null
@@ -329,6 +350,27 @@ export type Database = {
           name?: string
           notes?: string | null
           start_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          created_at: string
+          id: string
+          mood: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood?: string
           user_id?: string
         }
         Relationships: []

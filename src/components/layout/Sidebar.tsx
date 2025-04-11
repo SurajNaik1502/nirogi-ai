@@ -43,7 +43,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, href }) => {
 
 const Sidebar: React.FC = () => {
   return (
-    <aside className="glass-morphism w-64 flex-shrink-0 border-r border-white/5 p-4 hidden md:flex md:flex-col h-[calc(100vh-64px)] fixed overflow-y-auto">
+    <aside className="glass-morphism w-64 flex-shrink-0 border-r border-white/5 p-4 h-full overflow-y-auto">
       <div className="flex flex-col flex-1 overflow-y-auto space-y-6 pt-4">
         <div className="space-y-1">
           <p className="text-xs font-medium text-muted-foreground mb-2 pl-3">DASHBOARD</p>

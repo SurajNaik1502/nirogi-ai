@@ -30,7 +30,7 @@ export const fetchJournalEntries = async (userId: string, limit?: number) => {
     
     if (error) throw error;
     
-    return data as JournalEntry[];
+    return data as unknown as JournalEntry[];
   } catch (error) {
     console.error('Error fetching journal entries:', error);
     throw error;
@@ -47,7 +47,7 @@ export const createJournalEntry = async (entry: JournalEntryInput) => {
     
     if (error) throw error;
     
-    return data[0] as JournalEntry;
+    return data[0] as unknown as JournalEntry;
   } catch (error) {
     console.error('Error creating journal entry:', error);
     throw error;
@@ -82,7 +82,7 @@ export const getJournalEntry = async (id: string, userId: string) => {
     
     if (error) throw error;
     
-    return data as JournalEntry;
+    return data as unknown as JournalEntry;
   } catch (error) {
     console.error('Error fetching journal entry:', error);
     throw error;
