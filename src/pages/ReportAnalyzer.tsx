@@ -55,7 +55,7 @@ const ReportAnalyzer = () => {
       setLoading(true);
       const data = await fetchMedicalReports(user.id);
       if (data) {
-        setReports(data);
+        setReports(data as MedicalReport[]);
       }
     } catch (error) {
       console.error('Error loading medical reports:', error);
@@ -86,7 +86,7 @@ const ReportAnalyzer = () => {
       });
       
       if (newReport) {
-        setReports([newReport, ...reports]);
+        setReports([newReport as MedicalReport, ...reports]);
         toast({
           title: "Success",
           description: "Medical report added successfully",
@@ -274,12 +274,10 @@ const ReportAnalyzer = () => {
                     <p className="text-muted-foreground mt-2 mb-4">
                       Add your medical reports to analyze them
                     </p>
-                    <DialogTrigger asChild>
-                      <Button className="w-full">
-                        <FilePlus className="mr-2 h-4 w-4" />
-                        Add Your First Report
-                      </Button>
-                    </DialogTrigger>
+                    <Button onClick={() => setDialogOpen(true)} className="w-full">
+                      <FilePlus className="mr-2 h-4 w-4" />
+                      Add Your First Report
+                    </Button>
                   </div>
                 ) : (
                   <div className="divide-y divide-white/10">

@@ -25,9 +25,9 @@ const SkinAnalysisPage = () => {
       setLoading(true);
       const data = await fetchSkinAnalyses(user.id);
       if (data) {
-        setAnalyses(data);
+        setAnalyses(data as SkinAnalysis[]);
         if (data.length > 0 && !selectedAnalysis) {
-          setSelectedAnalysis(data[0]);
+          setSelectedAnalysis(data[0] as SkinAnalysis);
         }
       }
     } catch (error) {
@@ -79,8 +79,8 @@ const SkinAnalysisPage = () => {
           recommendations: "Based on the analysis, we recommend a hydrating skincare routine with gentle cleansers and daily sunscreen."
         }).then(newAnalysis => {
           if (newAnalysis) {
-            setAnalyses([newAnalysis, ...analyses]);
-            setSelectedAnalysis(newAnalysis);
+            setAnalyses([newAnalysis as SkinAnalysis, ...analyses]);
+            setSelectedAnalysis(newAnalysis as SkinAnalysis);
             toast({
               title: "Analysis Complete",
               description: "Your skin has been analyzed successfully",
@@ -294,7 +294,7 @@ const SkinAnalysisPage = () => {
                         <p className="text-muted-foreground mt-2 mb-4">
                           You haven't performed any skin analysis yet
                         </p>
-                        <Button onClick={() => document.querySelector('[value="analyze"]')?.click()}>
+                        <Button onClick={() => document.querySelector('[value="analyze"]')?.dispatchEvent(new Event('click'))}>
                           Start Your First Analysis
                         </Button>
                       </div>

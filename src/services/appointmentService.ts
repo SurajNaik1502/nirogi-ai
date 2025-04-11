@@ -17,11 +17,12 @@ export const fetchAppointments = async (userId: string) => {
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
       .eq('user_id', userId)
-      .order('datetime', { ascending: true });
+      .order('datetime', { ascending: true }) as any;
     
     if (error) throw error;
     
@@ -36,6 +37,7 @@ export const createAppointment = async (userId: string, appointment: Partial<App
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('appointments')
       .insert({
@@ -47,7 +49,7 @@ export const createAppointment = async (userId: string, appointment: Partial<App
         notes: appointment.notes,
         status: appointment.status || 'scheduled'
       })
-      .select();
+      .select() as any;
     
     if (error) throw error;
     
@@ -60,11 +62,12 @@ export const createAppointment = async (userId: string, appointment: Partial<App
 
 export const updateAppointment = async (id: string, appointment: Partial<Appointment>) => {
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('appointments')
       .update(appointment)
       .eq('id', id)
-      .select();
+      .select() as any;
     
     if (error) throw error;
     
@@ -77,10 +80,11 @@ export const updateAppointment = async (id: string, appointment: Partial<Appoint
 
 export const deleteAppointment = async (id: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { error } = await supabase
       .from('appointments')
       .delete()
-      .eq('id', id);
+      .eq('id', id) as any;
     
     if (error) throw error;
     

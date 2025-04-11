@@ -24,11 +24,12 @@ export const fetchMedications = async (userId: string) => {
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medications')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as any;
     
     if (error) throw error;
     
@@ -41,11 +42,12 @@ export const fetchMedications = async (userId: string) => {
 
 export const fetchMedicationLogs = async (medicationId: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medication_logs')
       .select('*')
       .eq('medication_id', medicationId)
-      .order('taken_at', { ascending: false });
+      .order('taken_at', { ascending: false }) as any;
     
     if (error) throw error;
     
@@ -60,6 +62,7 @@ export const createMedication = async (userId: string, medication: Partial<Medic
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medications')
       .insert({
@@ -71,7 +74,7 @@ export const createMedication = async (userId: string, medication: Partial<Medic
         end_date: medication.end_date,
         notes: medication.notes
       })
-      .select();
+      .select() as any;
     
     if (error) throw error;
     
@@ -84,13 +87,14 @@ export const createMedication = async (userId: string, medication: Partial<Medic
 
 export const logMedicationTaken = async (medicationId: string, takenAt: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medication_logs')
       .insert({
         medication_id: medicationId,
         taken_at: takenAt
       })
-      .select();
+      .select() as any;
     
     if (error) throw error;
     
@@ -103,10 +107,11 @@ export const logMedicationTaken = async (medicationId: string, takenAt: string) 
 
 export const deleteMedication = async (id: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { error } = await supabase
       .from('medications')
       .delete()
-      .eq('id', id);
+      .eq('id', id) as any;
     
     if (error) throw error;
     

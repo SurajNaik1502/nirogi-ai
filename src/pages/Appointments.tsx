@@ -8,8 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, parseISO, isAfter, isBefore, isToday } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, MapPin, PlusCircle, CheckCircle, XCircle, User } from 'lucide-react';
+import { format, parseISO, addHours, setHours, setMinutes } from 'date-fns';
+import { 
+  Clock, 
+  Calendar as CalendarIcon, 
+  PlusCircle, 
+  Trash2, 
+  CheckCircle2, 
+  XCircle, 
+  ClipboardList,
+  Building2
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   fetchAppointments, 
@@ -18,22 +27,24 @@ import {
   deleteAppointment,
   Appointment
 } from '@/services/appointmentService';
+import { fetchHospitals, Hospital } from '@/services/hospitalService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
   doctor_name: z.string().min(2, "Doctor name is required"),
   doctor_specialty: z.string().optional(),
   hospital_name: z.string().optional(),
-  date: z.date({
-    required_error: "Appointment date is required",
+  datetime: z.date({
+    required_error: "Appointment date and time is required",
   }),
-  time: z.string().min(1, "Appointment time is required"),
+  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   notes: z.string().optional(),
 });
 
@@ -41,8 +52,10 @@ const Appointments = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,7 +75,12 @@ const Appointments = () => {
       setLoading(true);
       const data = await fetchAppointments(user.id);
       if (data) {
-        setAppointments(data);
+        setAppointments(data as Appointment[]);
+      }
+
+      const hospitalsData = await fetchHospitals();
+      if (hospitalsData) {
+        setHospitals(hospitalsData as Hospital[]);
       }
     } catch (error) {
       console.error('Error loading appointments:', error);
@@ -84,25 +102,22 @@ const Appointments = () => {
     if (!user) return;
     
     try {
-      const appointmentDate = new Date(
-        values.date.getFullYear(),
-        values.date.getMonth(),
-        values.date.getDate(),
-        parseInt(values.time.split(':')[0]),
-        parseInt(values.time.split(':')[1])
-      ).toISOString();
-
+      // Combine date and time
+      const [hours, minutes] = values.time.split(':').map(Number);
+      const datetime = new Date(values.datetime);
+      const combinedDatetime = setMinutes(setHours(datetime, hours), minutes);
+      
       const newAppointment = await createAppointment(user.id, {
         doctor_name: values.doctor_name,
         doctor_specialty: values.doctor_specialty || null,
         hospital_name: values.hospital_name || null,
-        datetime: appointmentDate,
+        datetime: combinedDatetime.toISOString(),
         notes: values.notes || null,
         status: 'scheduled'
       });
       
       if (newAppointment) {
-        setAppointments([...appointments, newAppointment]);
+        setAppointments([...(appointments || []), newAppointment as Appointment]);
         toast({
           title: "Success",
           description: "Appointment scheduled successfully",
@@ -111,7 +126,7 @@ const Appointments = () => {
         form.reset();
       }
     } catch (error) {
-      console.error('Error scheduling appointment:', error);
+      console.error('Error creating appointment:', error);
       toast({
         title: "Error",
         description: "Failed to schedule appointment",
@@ -120,21 +135,28 @@ const Appointments = () => {
     }
   };
 
-  const handleUpdateStatus = async (id: string, status: string) => {
+  const updateAppointmentStatus = async (id: string, status: string) => {
     try {
-      await updateAppointment(id, { status });
-      setAppointments(appointments.map(appt => 
-        appt.id === id ? { ...appt, status } : appt
-      ));
-      toast({
-        title: "Success",
-        description: `Appointment marked as ${status}`,
-      });
+      const updatedAppointment = await updateAppointment(id, { status });
+      if (updatedAppointment) {
+        setAppointments(appointments.map(apt => 
+          apt.id === id ? { ...apt, status } as Appointment : apt
+        ));
+        
+        if (selectedAppointment?.id === id) {
+          setSelectedAppointment({ ...selectedAppointment, status } as Appointment);
+        }
+        
+        toast({
+          title: "Success",
+          description: `Appointment ${status === 'completed' ? 'marked as completed' : status === 'cancelled' ? 'cancelled' : 'updated'}`,
+        });
+      }
     } catch (error) {
-      console.error('Error updating appointment status:', error);
+      console.error('Error updating appointment:', error);
       toast({
         title: "Error",
-        description: "Failed to update appointment status",
+        description: "Failed to update appointment",
         variant: "destructive",
       });
     }
@@ -143,7 +165,10 @@ const Appointments = () => {
   const handleDeleteAppointment = async (id: string) => {
     try {
       await deleteAppointment(id);
-      setAppointments(appointments.filter(appt => appt.id !== id));
+      setAppointments(appointments.filter(apt => apt.id !== id));
+      if (selectedAppointment?.id === id) {
+        setSelectedAppointment(null);
+      }
       toast({
         title: "Success",
         description: "Appointment deleted successfully",
@@ -158,12 +183,26 @@ const Appointments = () => {
     }
   };
 
-  const upcomingAppointments = appointments.filter(appt => 
-    isAfter(new Date(appt.datetime), new Date()) || isToday(new Date(appt.datetime))
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return <Badge className="bg-blue-500">{status}</Badge>;
+      case 'completed':
+        return <Badge className="bg-green-500">{status}</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-500">{status}</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const upcomingAppointments = appointments.filter(appointment => 
+    appointment.status === 'scheduled' && new Date(appointment.datetime) >= new Date()
   );
   
-  const pastAppointments = appointments.filter(appt => 
-    isBefore(new Date(appt.datetime), new Date()) && !isToday(new Date(appt.datetime))
+  const pastAppointments = appointments.filter(appointment => 
+    appointment.status === 'completed' || appointment.status === 'cancelled' || 
+    (appointment.status === 'scheduled' && new Date(appointment.datetime) < new Date())
   );
 
   return (
@@ -180,7 +219,7 @@ const Appointments = () => {
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Schedule Appointment
+                New Appointment
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -196,7 +235,7 @@ const Appointments = () => {
                       <FormItem>
                         <FormLabel>Doctor Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Dr. Smith" {...field} />
+                          <Input placeholder="Dr. John Smith" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -209,9 +248,23 @@ const Appointments = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Specialty (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Cardiologist" {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select specialty" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="cardiology">Cardiology</SelectItem>
+                            <SelectItem value="dermatology">Dermatology</SelectItem>
+                            <SelectItem value="neurology">Neurology</SelectItem>
+                            <SelectItem value="orthopedics">Orthopedics</SelectItem>
+                            <SelectItem value="pediatrics">Pediatrics</SelectItem>
+                            <SelectItem value="psychiatry">Psychiatry</SelectItem>
+                            <SelectItem value="general">General Practice</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -223,9 +276,21 @@ const Appointments = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Hospital/Clinic (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Memorial Hospital" {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select hospital" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {hospitals.map(hospital => (
+                              <SelectItem key={hospital.id} value={hospital.name}>
+                                {hospital.name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -234,7 +299,7 @@ const Appointments = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="date"
+                      name="datetime"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
                           <FormLabel>Date</FormLabel>
@@ -260,6 +325,7 @@ const Appointments = () => {
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 initialFocus
+                                className="p-3 pointer-events-auto"
                               />
                             </PopoverContent>
                           </Popover>
@@ -291,7 +357,7 @@ const Appointments = () => {
                         <FormLabel>Notes (Optional)</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Any additional information"
+                            placeholder="Any special instructions or reason for visit"
                             className="resize-none"
                             {...field}
                           />
@@ -314,108 +380,179 @@ const Appointments = () => {
           <TabsList>
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="past">Past</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
           </TabsList>
           
           <TabsContent value="upcoming" className="space-y-4 pt-4">
-            {loading ? (
-              <Card className="glass-morphism">
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center h-48">
-                    <div className="flex space-x-2">
-                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : upcomingAppointments.length === 0 ? (
-              <Card className="glass-morphism">
-                <CardContent className="p-6 text-center">
-                  <div className="py-12">
-                    <CalendarIcon className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                    <h3 className="text-xl font-medium">No upcoming appointments</h3>
-                    <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                      Schedule your first appointment to start tracking them
-                    </p>
-                    <DialogTrigger asChild>
-                      <Button className="mt-6">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Schedule Your First Appointment
-                      </Button>
-                    </DialogTrigger>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {upcomingAppointments.map(appointment => (
-                  <Card key={appointment.id} className="glass-morphism overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="grid grid-cols-1 md:grid-cols-4">
-                        <div className="bg-white/5 p-6 flex flex-col justify-center items-center md:border-r border-white/10">
-                          <div className="text-center">
-                            <p className="text-2xl font-bold">
-                              {format(parseISO(appointment.datetime), 'dd')}
-                            </p>
-                            <p className="text-lg">
-                              {format(parseISO(appointment.datetime), 'MMM')}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {format(parseISO(appointment.datetime), 'hh:mm a')}
-                            </p>
-                          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1 space-y-4">
+                {loading ? (
+                  <Card className="glass-morphism">
+                    <CardContent className="p-6 text-center">
+                      <div className="flex items-center justify-center h-48">
+                        <div className="flex space-x-2">
+                          <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                         </div>
-                        
-                        <div className="p-6 md:col-span-2">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-health-blue" />
-                              <h3 className="font-semibold">{appointment.doctor_name}</h3>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : upcomingAppointments.length === 0 ? (
+                  <Card className="glass-morphism">
+                    <CardContent className="p-6 text-center">
+                      <div className="py-12">
+                        <ClipboardList className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                        <h3 className="text-xl font-medium">No upcoming appointments</h3>
+                        <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                          You don't have any upcoming appointments scheduled
+                        </p>
+                        <Button className="mt-6" onClick={() => setDialogOpen(true)}>
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Schedule Your First Appointment
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  upcomingAppointments.map(appointment => (
+                    <Card 
+                      key={appointment.id} 
+                      className={`glass-morphism hover:bg-white/5 transition-colors cursor-pointer ${
+                        selectedAppointment?.id === appointment.id ? 'bg-white/5' : ''
+                      }`}
+                      onClick={() => setSelectedAppointment(appointment)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium">{appointment.doctor_name}</h3>
+                            <div className="text-sm text-muted-foreground mt-1">
                               {appointment.doctor_specialty && (
-                                <span className="text-sm text-muted-foreground">{appointment.doctor_specialty}</span>
+                                <p>{appointment.doctor_specialty}</p>
+                              )}
+                              {appointment.hospital_name && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Building2 className="h-3 w-3" />
+                                  <span>{appointment.hospital_name}</span>
+                                </div>
                               )}
                             </div>
-                            
-                            {appointment.hospital_name && (
-                              <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{appointment.hospital_name}</span>
-                              </div>
-                            )}
-                            
-                            {appointment.notes && (
-                              <p className="text-sm text-muted-foreground mt-2">{appointment.notes}</p>
-                            )}
                           </div>
+                          {getStatusBadge(appointment.status)}
                         </div>
                         
-                        <div className="p-6 flex flex-col gap-2 justify-center items-center md:border-l border-white/10">
-                          <div className="flex flex-col gap-2 w-full">
+                        <div className="mt-4 space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            <span>{format(parseISO(appointment.datetime), 'EEEE, MMMM d, yyyy')}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span>{format(parseISO(appointment.datetime), 'h:mm a')}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+              
+              <div className="md:col-span-2">
+                {selectedAppointment ? (
+                  <Card className="glass-morphism">
+                    <CardHeader>
+                      <CardTitle>Appointment Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h2 className="text-2xl font-bold">{selectedAppointment.doctor_name}</h2>
+                            {selectedAppointment.doctor_specialty && (
+                              <p className="text-muted-foreground">{selectedAppointment.doctor_specialty}</p>
+                            )}
+                          </div>
+                          {getStatusBadge(selectedAppointment.status)}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="text-sm text-muted-foreground">Date & Time</h3>
+                            <p className="font-medium">
+                              {format(parseISO(selectedAppointment.datetime), 'EEEE, MMMM d, yyyy')}
+                              <br />
+                              {format(parseISO(selectedAppointment.datetime), 'h:mm a')}
+                            </p>
+                          </div>
+                          
+                          {selectedAppointment.hospital_name && (
+                            <div>
+                              <h3 className="text-sm text-muted-foreground">Location</h3>
+                              <p className="font-medium">{selectedAppointment.hospital_name}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {selectedAppointment.notes && (
+                          <div>
+                            <h3 className="text-sm text-muted-foreground">Notes</h3>
+                            <p className="mt-1">{selectedAppointment.notes}</p>
+                          </div>
+                        )}
+                        
+                        <div className="border-t border-white/10 pt-4">
+                          <h3 className="font-medium mb-2">Appointment Actions</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedAppointment.status === 'scheduled' && (
+                              <>
+                                <Button 
+                                  variant="default" 
+                                  onClick={() => updateAppointmentStatus(selectedAppointment.id, 'completed')}
+                                >
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  Mark as Completed
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  className="text-red-500 hover:text-red-600"
+                                  onClick={() => updateAppointmentStatus(selectedAppointment.id, 'cancelled')}
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Cancel Appointment
+                                </Button>
+                              </>
+                            )}
                             <Button 
-                              variant="outline" 
-                              onClick={() => handleUpdateStatus(appointment.id, 'completed')}
-                              className="w-full"
+                              variant="ghost" 
+                              className="text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteAppointment(selectedAppointment.id)}
                             >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Complete
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              onClick={() => handleUpdateStatus(appointment.id, 'cancelled')}
-                              className="w-full"
-                            >
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Cancel
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
                             </Button>
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                ) : (
+                  <Card className="glass-morphism h-full">
+                    <CardContent className="flex flex-col items-center justify-center h-full p-6 text-center">
+                      <ClipboardList className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                      <h3 className="text-xl font-medium">No appointment selected</h3>
+                      <p className="text-muted-foreground mt-2 max-w-md">
+                        Select an appointment from the list to view details or click the button to schedule a new one
+                      </p>
+                      <Button className="mt-6" onClick={() => setDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        New Appointment
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-            )}
+            </div>
           </TabsContent>
           
           <TabsContent value="past" className="pt-4">
@@ -424,68 +561,138 @@ const Appointments = () => {
                 <CardTitle>Past Appointments</CardTitle>
               </CardHeader>
               <CardContent>
-                {pastAppointments.length === 0 ? (
+                {loading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <div className="flex space-x-2">
+                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                ) : pastAppointments.length === 0 ? (
                   <div className="text-center py-8">
-                    <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                     <h3 className="text-lg font-medium">No past appointments</h3>
-                    <p className="text-muted-foreground mt-2">
-                      Your appointment history will appear here
-                    </p>
+                    <p className="text-muted-foreground mt-2">Your appointment history will appear here</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {pastAppointments.map(appointment => (
                       <div 
                         key={appointment.id}
-                        className="flex items-center gap-4 p-4 border-b border-white/10 last:border-0"
+                        className="flex justify-between items-center p-4 border-b border-white/10 last:border-0"
                       >
-                        <div className="flex-shrink-0 text-center">
-                          <p className="text-lg font-bold">
-                            {format(parseISO(appointment.datetime), 'dd')}
-                          </p>
-                          <p className="text-sm">
-                            {format(parseISO(appointment.datetime), 'MMM')}
-                          </p>
-                        </div>
-                        
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{appointment.doctor_name}</h4>
-                            {appointment.doctor_specialty && (
-                              <span className="text-sm text-muted-foreground">({appointment.doctor_specialty})</span>
-                            )}
+                            {getStatusBadge(appointment.status)}
                           </div>
                           
-                          <div className="flex items-center gap-4 mt-1">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {format(parseISO(appointment.datetime), 'h:mm a')}
-                              </span>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {appointment.doctor_specialty && (
+                              <span>{appointment.doctor_specialty} • </span>
+                            )}
+                            {format(parseISO(appointment.datetime), 'MMMM d, yyyy')} at {format(parseISO(appointment.datetime), 'h:mm a')}
+                          </div>
+                          
+                          {appointment.hospital_name && (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                              <Building2 className="h-3 w-3" />
+                              <span>{appointment.hospital_name}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground"
+                          onClick={() => handleDeleteAppointment(appointment.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="all" className="pt-4">
+            <Card className="glass-morphism">
+              <CardHeader>
+                <CardTitle>All Appointments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <div className="flex space-x-2">
+                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                ) : appointments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-medium">No appointments found</h3>
+                    <p className="text-muted-foreground mt-2">Schedule your first appointment to get started</p>
+                    <Button className="mt-4" onClick={() => setDialogOpen(true)}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      New Appointment
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {appointments
+                      .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime())
+                      .map(appointment => (
+                        <div 
+                          key={appointment.id}
+                          className="flex justify-between items-center p-4 border-b border-white/10 last:border-0"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{appointment.doctor_name}</h4>
+                              {getStatusBadge(appointment.status)}
+                            </div>
+                            
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {appointment.doctor_specialty && (
+                                <span>{appointment.doctor_specialty} • </span>
+                              )}
+                              {format(parseISO(appointment.datetime), 'MMMM d, yyyy')} at {format(parseISO(appointment.datetime), 'h:mm a')}
                             </div>
                             
                             {appointment.hospital_name && (
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{appointment.hospital_name}</span>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                                <Building2 className="h-3 w-3" />
+                                <span>{appointment.hospital_name}</span>
                               </div>
                             )}
                           </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {appointment.status === 'scheduled' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-500"
+                                onClick={() => updateAppointmentStatus(appointment.id, 'completed')}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground"
+                              onClick={() => handleDeleteAppointment(appointment.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        
-                        <div className="flex-shrink-0">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            appointment.status === 'completed' 
-                              ? 'bg-green-500/20 text-green-500' 
-                              : appointment.status === 'cancelled'
-                              ? 'bg-red-500/20 text-red-500'
-                              : 'bg-blue-500/20 text-blue-500'
-                          }`}>
-                            {appointment.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
               </CardContent>

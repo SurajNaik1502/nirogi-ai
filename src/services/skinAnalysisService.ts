@@ -14,11 +14,12 @@ export const fetchSkinAnalyses = async (userId: string) => {
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('skin_analyses')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as any;
     
     if (error) throw error;
     
@@ -31,11 +32,12 @@ export const fetchSkinAnalyses = async (userId: string) => {
 
 export const fetchSkinAnalysis = async (id: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('skin_analyses')
       .select('*')
       .eq('id', id)
-      .single();
+      .single() as any;
     
     if (error) throw error;
     
@@ -50,6 +52,7 @@ export const createSkinAnalysis = async (userId: string, analysis: Partial<SkinA
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('skin_analyses')
       .insert({
@@ -58,7 +61,7 @@ export const createSkinAnalysis = async (userId: string, analysis: Partial<SkinA
         analysis_result: analysis.analysis_result,
         recommendations: analysis.recommendations
       })
-      .select();
+      .select() as any;
     
     if (error) throw error;
     
@@ -71,10 +74,11 @@ export const createSkinAnalysis = async (userId: string, analysis: Partial<SkinA
 
 export const deleteSkinAnalysis = async (id: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { error } = await supabase
       .from('skin_analyses')
       .delete()
-      .eq('id', id);
+      .eq('id', id) as any;
     
     if (error) throw error;
     

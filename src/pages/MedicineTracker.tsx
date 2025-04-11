@@ -61,7 +61,7 @@ const MedicineTracker = () => {
       setLoading(true);
       const data = await fetchMedications(user.id);
       if (data) {
-        setMedications(data);
+        setMedications(data as Medication[]);
       }
     } catch (error) {
       console.error('Error loading medications:', error);
@@ -93,7 +93,7 @@ const MedicineTracker = () => {
       });
       
       if (newMedication) {
-        setMedications([newMedication, ...medications]);
+        setMedications([newMedication as Medication, ...medications]);
         toast({
           title: "Success",
           description: "Medication added successfully",
@@ -352,12 +352,10 @@ const MedicineTracker = () => {
                     <p className="text-muted-foreground mt-2 max-w-md mx-auto">
                       Add your medications to start tracking them
                     </p>
-                    <DialogTrigger asChild>
-                      <Button className="mt-6">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Your First Medication
-                      </Button>
-                    </DialogTrigger>
+                    <Button className="mt-6" onClick={() => setDialogOpen(true)}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Your First Medication
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

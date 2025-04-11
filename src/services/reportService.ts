@@ -16,11 +16,12 @@ export const fetchMedicalReports = async (userId: string) => {
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medical_reports')
       .select('*')
       .eq('user_id', userId)
-      .order('report_date', { ascending: false });
+      .order('report_date', { ascending: false }) as any;
     
     if (error) throw error;
     
@@ -33,11 +34,12 @@ export const fetchMedicalReports = async (userId: string) => {
 
 export const fetchMedicalReport = async (reportId: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medical_reports')
       .select('*')
       .eq('id', reportId)
-      .single();
+      .single() as any;
     
     if (error) throw error;
     
@@ -52,6 +54,7 @@ export const createMedicalReport = async (userId: string, report: Partial<Medica
   if (!userId) return null;
   
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medical_reports')
       .insert({
@@ -62,7 +65,7 @@ export const createMedicalReport = async (userId: string, report: Partial<Medica
         analysis_result: report.analysis_result,
         notes: report.notes
       })
-      .select();
+      .select() as any;
     
     if (error) throw error;
     
@@ -75,11 +78,12 @@ export const createMedicalReport = async (userId: string, report: Partial<Medica
 
 export const updateMedicalReport = async (reportId: string, updates: Partial<MedicalReport>) => {
   try {
+    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('medical_reports')
       .update(updates)
       .eq('id', reportId)
-      .select();
+      .select() as any;
     
     if (error) throw error;
     
@@ -92,10 +96,11 @@ export const updateMedicalReport = async (reportId: string, updates: Partial<Med
 
 export const deleteMedicalReport = async (reportId: string) => {
   try {
+    // Using a type assertion to handle the custom table
     const { error } = await supabase
       .from('medical_reports')
       .delete()
-      .eq('id', reportId);
+      .eq('id', reportId) as any;
     
     if (error) throw error;
     
