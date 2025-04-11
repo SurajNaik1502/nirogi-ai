@@ -32,6 +32,17 @@ export interface Exercise {
   created_at: string;
 }
 
+// Define types specifically for creating entities
+export type CreateWorkout = Omit<Workout, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
+export type CreateExercise = Omit<Exercise, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
 export const fetchWorkoutPlans = async (userId: string) => {
   if (!userId) return null;
   
@@ -79,7 +90,7 @@ export const createWorkoutPlan = async (userId: string, plan: Partial<WorkoutPla
       .from('workout_plans')
       .insert({
         user_id: userId,
-        title: plan.title,
+        title: plan.title!,
         description: plan.description,
         duration_weeks: plan.duration_weeks
       })
@@ -94,7 +105,12 @@ export const createWorkoutPlan = async (userId: string, plan: Partial<WorkoutPla
   }
 };
 
-export const addWorkoutToPlan = async (workout: Partial<Workout>) => {
+export const addWorkoutToPlan = async (workout: CreateWorkout) => {
+  // Validate required properties
+  if (!workout.workout_plan_id || !workout.title) {
+    throw new Error('Missing required properties: workout_plan_id and title are required');
+  }
+
   try {
     const { data, error } = await supabase
       .from('workouts')
@@ -110,7 +126,12 @@ export const addWorkoutToPlan = async (workout: Partial<Workout>) => {
   }
 };
 
-export const addExerciseToWorkout = async (exercise: Partial<Exercise>) => {
+export const addExerciseToWorkout = async (exercise: CreateExercise) => {
+  // Validate required properties
+  if (!exercise.workout_id || !exercise.name) {
+    throw new Error('Missing required properties: workout_id and name are required');
+  }
+
   try {
     const { data, error } = await supabase
       .from('exercises')

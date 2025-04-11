@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 export interface DietPlan {
   id: string;
@@ -24,6 +23,12 @@ export interface DietPlanMeal {
   meal_time: string | null;
   created_at: string;
 }
+
+// Define types specifically for creating entities
+export type CreateDietPlanMeal = Omit<DietPlanMeal, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
 
 export const fetchDietPlans = async (userId: string) => {
   if (!userId) return null;
@@ -72,7 +77,7 @@ export const createDietPlan = async (userId: string, plan: Partial<DietPlan>) =>
       .from('diet_plans')
       .insert({
         user_id: userId,
-        title: plan.title,
+        title: plan.title!,
         description: plan.description,
         calories_per_day: plan.calories_per_day
       })
@@ -87,7 +92,12 @@ export const createDietPlan = async (userId: string, plan: Partial<DietPlan>) =>
   }
 };
 
-export const addMealToPlan = async (meal: Partial<DietPlanMeal>) => {
+export const addMealToPlan = async (meal: CreateDietPlanMeal) => {
+  // Validate required properties
+  if (!meal.diet_plan_id || !meal.meal_name) {
+    throw new Error('Missing required properties: diet_plan_id and meal_name are required');
+  }
+
   try {
     const { data, error } = await supabase
       .from('diet_plan_meals')

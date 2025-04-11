@@ -19,11 +19,10 @@ export interface Hospital {
 
 export const fetchHospitals = async () => {
   try {
-    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('hospitals')
       .select('*')
-      .order('name') as any;
+      .order('name');
     
     if (error) throw error;
     
@@ -36,12 +35,11 @@ export const fetchHospitals = async () => {
 
 export const fetchHospitalsByCity = async (city: string) => {
   try {
-    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('hospitals')
       .select('*')
       .ilike('city', `%${city}%`)
-      .order('name') as any;
+      .order('name');
     
     if (error) throw error;
     
@@ -54,12 +52,11 @@ export const fetchHospitalsByCity = async (city: string) => {
 
 export const fetchHospitalsBySpecialty = async (specialty: string) => {
   try {
-    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('hospitals')
       .select('*')
       .contains('specialties', [specialty])
-      .order('name') as any;
+      .order('name');
     
     if (error) throw error;
     
@@ -72,12 +69,11 @@ export const fetchHospitalsBySpecialty = async (specialty: string) => {
 
 export const fetchHospitalById = async (id: string) => {
   try {
-    // Using a type assertion to handle the custom table
     const { data, error } = await supabase
       .from('hospitals')
       .select('*')
       .eq('id', id)
-      .single() as any;
+      .single();
     
     if (error) throw error;
     
