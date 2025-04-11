@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
@@ -204,6 +203,10 @@ const Appointments = () => {
     appointment.status === 'completed' || appointment.status === 'cancelled' || 
     (appointment.status === 'scheduled' && new Date(appointment.datetime) < new Date())
   );
+
+  const handleAppointmentClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+  };
 
   return (
     <Layout>
@@ -421,7 +424,7 @@ const Appointments = () => {
                       className={`glass-morphism hover:bg-white/5 transition-colors cursor-pointer ${
                         selectedAppointment?.id === appointment.id ? 'bg-white/5' : ''
                       }`}
-                      onClick={() => setSelectedAppointment(appointment)}
+                      onClick={() => handleAppointmentClick(appointment)}
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">

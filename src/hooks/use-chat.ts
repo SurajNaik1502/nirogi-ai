@@ -1,119 +1,79 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { getAIResponse, saveMessageToDatabase } from '@/services/chatService';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { Message, fetchChatHistory, saveMessageToDatabase, getAIResponse } from '@/services/chatService';
+import { Message } from '@/services/chatService';
 
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      loadChatHistory();
-    } else {
-      // Set default welcome message for not logged in users
-      setMessages([
-        {
-          id: '1',
-          content: "Hello! I'm your virtual health consultant. How can I help you today?",
-          sender: 'bot',
-          timestamp: new Date(),
-        }
-      ]);
-    }
-  }, [user]);
+  const sendMessage = useCallback(async (content: string) => {
+    if (!content.trim()) return;
 
-  const loadChatHistory = async () => {
-    if (!user) return;
-    
-    try {
-      const data = await fetchChatHistory(user.id);
-      
-      if (data && data.length === 0) {
-        // Add welcome message if no chat history
-        const welcomeMessage = {
-          id: '1',
-          content: "Hello! I'm your virtual health consultant. How can I help you today?",
-          sender: 'bot' as const,
-          timestamp: new Date(),
-        };
-        setMessages([welcomeMessage]);
-        
-        // Save welcome message to database
-        await saveMessageToDatabase(user.id, welcomeMessage.content, welcomeMessage.sender);
-      } else if (data) {
-        // Format the retrieved messages
-        const formattedMessages = data.map(msg => ({
-          id: msg.id,
-          content: msg.message,
-          sender: msg.sender as 'user' | 'bot',
-          timestamp: new Date(msg.created_at)
-        }));
-        
-        setMessages(formattedMessages);
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load chat history',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const sendMessage = async (messageContent: string) => {
-    if (!messageContent.trim() || isLoading) return;
-    
-    // Add user message
+    // Create user message
     const userMessage: Message = {
-      id: Date.now().toString(),
-      content: messageContent,
+      id: uuidv4(),
+      content,
       sender: 'user',
       timestamp: new Date(),
     };
-    
-    setMessages(prev => [...prev, userMessage]);
-    
+
+    // Add user message to state
+    setMessages((prev) => [...prev, userMessage]);
+
+    // Save user message to database if user is authenticated
     if (user) {
-      await saveMessageToDatabase(user.id, userMessage.content, userMessage.sender);
+      try {
+        await saveMessageToDatabase(user.id, content, 'user');
+      } catch (error) {
+        console.error('Error saving user message:', error);
+      }
     }
-    
+
+    // Set loading state for bot response
     setIsLoading(true);
-    
+
     try {
-      // Get response from AI
-      const botResponse = await getAIResponse(messageContent);
-      
+      // Get AI response
+      const botResponse = await getAIResponse(content);
+
+      // Create bot message
       const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: uuidv4(),
         content: botResponse,
         sender: 'bot',
         timestamp: new Date(),
       };
-      
-      setMessages(prev => [...prev, botMessage]);
-      
+
+      // Add bot message to state
+      setMessages((prev) => [...prev, botMessage]);
+
+      // Save bot message to database if user is authenticated
       if (user) {
-        await saveMessageToDatabase(user.id, botMessage.content, botMessage.sender);
+        try {
+          await saveMessageToDatabase(user.id, botResponse, 'bot');
+        } catch (error) {
+          console.error('Error saving bot message:', error);
+        }
       }
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'Failed to get health advice. Please try again.',
-        variant: 'destructive',
-      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+  }, []);
 
   return {
     messages,
     isLoading,
     sendMessage,
+    clearMessages
   };
 };

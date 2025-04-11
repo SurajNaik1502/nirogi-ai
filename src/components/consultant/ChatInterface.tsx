@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,7 @@ import TypingIndicator from './TypingIndicator';
 import ChatInputArea from './ChatInputArea';
 
 const ChatInterface: React.FC = () => {
-  const { messages, isLoading, sendMessage } = useChat();
+  const { messages, isLoading, sendMessage, clearMessages } = useChat();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -39,8 +39,8 @@ const ChatInterface: React.FC = () => {
         description: 'Your consultation has been saved successfully',
       });
       
-      // Navigate to chat history
-      navigate('/chat-history');
+      // Navigate back to consultant page with the history tab active
+      navigate('/consultant?tab=history');
     } catch (error: any) {
       console.error('Error saving chat:', error);
       toast({
@@ -52,6 +52,14 @@ const ChatInterface: React.FC = () => {
       setIsSaving(false);
     }
   };
+
+  const handleClearChat = () => {
+    clearMessages();
+    toast({
+      title: 'Chat Cleared',
+      description: 'Your conversation has been cleared.',
+    });
+  };
   
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)] glass-morphism rounded-lg">
@@ -60,17 +68,31 @@ const ChatInterface: React.FC = () => {
           <h2 className="text-xl font-semibold">Health Consultant</h2>
           <p className="text-sm text-muted-foreground">Discuss your symptoms and get AI-powered health advice</p>
         </div>
-        {user && messages.length > 0 && (
-          <Button
-            onClick={handleSaveChat}
-            variant="outline"
-            className="flex items-center gap-2"
-            disabled={isSaving}
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Save Chat'}
-          </Button>
-        )}
+        <div className="flex space-x-2">
+          {messages.length > 0 && (
+            <>
+              <Button
+                onClick={handleClearChat}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear Chat
+              </Button>
+              {user && (
+                <Button
+                  onClick={handleSaveChat}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  disabled={isSaving}
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? 'Saving...' : 'Save Chat'}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
       
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef as any}>
