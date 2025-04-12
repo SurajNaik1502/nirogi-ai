@@ -190,48 +190,45 @@ export type Database = {
       hospitals: {
         Row: {
           address: string
+          beds_available: string | null
           city: string
+          closing_time: string | null
           created_at: string
           email: string | null
+          hospital_name: string
           id: string
-          latitude: number | null
-          longitude: number | null
-          name: string
+          opening_time: string | null
           phone: string | null
-          postal_code: string | null
-          specialties: string[] | null
+          speciality: string[] | null
           state: string | null
-          website: string | null
         }
         Insert: {
           address: string
+          beds_available?: string | null
           city: string
+          closing_time?: string | null
           created_at?: string
           email?: string | null
+          hospital_name: string
           id?: string
-          latitude?: number | null
-          longitude?: number | null
-          name: string
+          opening_time?: string | null
           phone?: string | null
-          postal_code?: string | null
-          specialties?: string[] | null
+          speciality?: string[] | null
           state?: string | null
-          website?: string | null
         }
         Update: {
           address?: string
+          beds_available?: string | null
           city?: string
+          closing_time?: string | null
           created_at?: string
           email?: string | null
+          hospital_name?: string
           id?: string
-          latitude?: number | null
-          longitude?: number | null
-          name?: string
+          opening_time?: string | null
           phone?: string | null
-          postal_code?: string | null
-          specialties?: string[] | null
+          speciality?: string[] | null
           state?: string | null
-          website?: string | null
         }
         Relationships: []
       }

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface Hospital {
   id: string;
-  name: string;
+  hospital_name: string;
   address: string;
   city: string;
   state: string | null;
@@ -13,8 +13,11 @@ export interface Hospital {
   website: string | null;
   latitude: number | null;
   longitude: number | null;
-  specialties: string[] | null;
+  speciality: string[] | null;
   created_at: string;
+  opening_time: string | null;
+  closing_time: string | null;
+  beds_available: string | null;
 }
 
 export const fetchHospitals = async () => {
@@ -22,7 +25,7 @@ export const fetchHospitals = async () => {
     const { data, error } = await supabase
       .from('hospitals')
       .select('*')
-      .order('name');
+      .order('hospital_name');
     
     if (error) throw error;
     
@@ -39,7 +42,7 @@ export const fetchHospitalsByCity = async (city: string) => {
       .from('hospitals')
       .select('*')
       .ilike('city', `%${city}%`)
-      .order('name');
+      .order('hospital_name');
     
     if (error) throw error;
     
@@ -55,8 +58,8 @@ export const fetchHospitalsBySpecialty = async (specialty: string) => {
     const { data, error } = await supabase
       .from('hospitals')
       .select('*')
-      .contains('specialties', [specialty])
-      .order('name');
+      .contains('speciality', [specialty])
+      .order('hospital_name');
     
     if (error) throw error;
     

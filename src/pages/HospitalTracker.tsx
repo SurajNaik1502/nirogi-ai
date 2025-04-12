@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { fetchHospitals, fetchHospitalsByCity, fetchHospitalsBySpecialty, Hospital } from '@/services/hospitalService';
-import { Search, MapPin, Phone, Mail, Globe, Building2, Star } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, Globe, Building2, Star, Clock, Hospital as HospitalIcon, Bed } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +59,7 @@ const HospitalTracker = () => {
       } else {
         // Search by name (client-side filtering)
         results = hospitals.filter(hospital => 
-          hospital.name.toLowerCase().includes(searchTerm.toLowerCase())
+          hospital.hospital_name.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }
       
@@ -167,21 +167,21 @@ const HospitalTracker = () => {
                         }`}
                         onClick={() => setSelectedHospital(hospital)}
                       >
-                        <h3 className="font-medium">{hospital.name}</h3>
+                        <h3 className="font-medium">{hospital.hospital_name}</h3>
                         <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3" />
                           <span>{hospital.city}{hospital.state ? `, ${hospital.state}` : ''}</span>
                         </div>
-                        {hospital.specialties && hospital.specialties.length > 0 && (
+                        {hospital.speciality && hospital.speciality.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {hospital.specialties.slice(0, 2).map((specialty, index) => (
+                            {hospital.speciality.slice(0, 2).map((specialty, index) => (
                               <Badge key={index} variant="outline" className="text-xs">
                                 {specialty}
                               </Badge>
                             ))}
-                            {hospital.specialties.length > 2 && (
+                            {hospital.speciality.length > 2 && (
                               <Badge variant="outline" className="text-xs">
-                                +{hospital.specialties.length - 2} more
+                                +{hospital.speciality.length - 2} more
                               </Badge>
                             )}
                           </div>
@@ -198,7 +198,7 @@ const HospitalTracker = () => {
             {selectedHospital ? (
               <Card className="glass-morphism">
                 <CardHeader>
-                  <CardTitle>{selectedHospital.name}</CardTitle>
+                  <CardTitle>{selectedHospital.hospital_name}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
@@ -239,34 +239,44 @@ const HospitalTracker = () => {
                               </a>
                             </div>
                           )}
+                          
+                          {(selectedHospital.opening_time || selectedHospital.closing_time) && (
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span>
+                                {selectedHospital.opening_time && selectedHospital.closing_time
+                                  ? `${selectedHospital.opening_time} - ${selectedHospital.closing_time}`
+                                  : selectedHospital.opening_time
+                                  ? `Opens at ${selectedHospital.opening_time}`
+                                  : `Closes at ${selectedHospital.closing_time}`}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {selectedHospital.beds_available && (
+                            <div className="flex items-center gap-2">
+                              <Bed className="h-4 w-4 text-muted-foreground" />
+                              <span>Beds available: {selectedHospital.beds_available}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
                       <div className="rounded-md overflow-hidden aspect-video bg-black/20 flex items-center justify-center">
-                        {selectedHospital.latitude && selectedHospital.longitude ? (
-                          <div className="w-full h-full">
-                            {/* In a production app, this would be a map component */}
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-                              <div className="text-center">
-                                <MapPin className="h-12 w-12 mx-auto text-health-blue opacity-70 mb-2" />
-                                <p className="text-sm">Map location: {selectedHospital.latitude.toFixed(4)}, {selectedHospital.longitude.toFixed(4)}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
                           <div className="text-center">
-                            <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-                            <p className="text-muted-foreground">Map location not available</p>
+                            <HospitalIcon className="h-12 w-12 mx-auto text-health-blue opacity-70 mb-2" />
+                            <p className="text-sm">Hospital Location</p>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                     
-                    {selectedHospital.specialties && selectedHospital.specialties.length > 0 && (
+                    {selectedHospital.speciality && selectedHospital.speciality.length > 0 && (
                       <div>
                         <h3 className="text-sm text-muted-foreground mb-2">Specialties</h3>
                         <div className="flex flex-wrap gap-2">
-                          {selectedHospital.specialties.map((specialty, index) => (
+                          {selectedHospital.speciality.map((specialty, index) => (
                             <Badge key={index} className="bg-white/10 hover:bg-white/20 text-foreground">
                               {specialty}
                             </Badge>
