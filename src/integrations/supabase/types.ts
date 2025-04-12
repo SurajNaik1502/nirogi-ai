@@ -199,7 +199,7 @@ export type Database = {
           id: string
           opening_time: string | null
           phone: string | null
-          speciality: string[] | null
+          speciality: string | null
           state: string | null
         }
         Insert: {
@@ -213,7 +213,7 @@ export type Database = {
           id?: string
           opening_time?: string | null
           phone?: string | null
-          speciality?: string[] | null
+          speciality?: string | null
           state?: string | null
         }
         Update: {
@@ -227,7 +227,7 @@ export type Database = {
           id?: string
           opening_time?: string | null
           phone?: string | null
-          speciality?: string[] | null
+          speciality?: string | null
           state?: string | null
         }
         Relationships: []

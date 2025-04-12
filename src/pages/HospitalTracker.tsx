@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,6 +81,23 @@ const HospitalTracker = () => {
   const clearSearch = () => {
     setSearchTerm('');
     setFilteredHospitals(hospitals);
+  };
+
+  // Helper function to parse speciality string to array
+  const parseSpecialities = (specialityString: string | null): string[] => {
+    if (!specialityString) return [];
+    
+    try {
+      // Try to parse as JSON if it looks like an array
+      if (specialityString.startsWith('[') && specialityString.endsWith(']')) {
+        return JSON.parse(specialityString);
+      }
+      // Otherwise, split by commas if it's a comma-separated string
+      return specialityString.split(',').map(s => s.trim());
+    } catch (error) {
+      console.error('Error parsing specialities:', error);
+      return [specialityString]; // Return as single item array if parsing fails
+    }
   };
 
   return (
@@ -172,16 +188,16 @@ const HospitalTracker = () => {
                           <MapPin className="h-3 w-3" />
                           <span>{hospital.city}{hospital.state ? `, ${hospital.state}` : ''}</span>
                         </div>
-                        {hospital.speciality && hospital.speciality.length > 0 && (
+                        {hospital.speciality && (
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {hospital.speciality.slice(0, 2).map((specialty, index) => (
+                            {parseSpecialities(hospital.speciality).slice(0, 2).map((specialty, index) => (
                               <Badge key={index} variant="outline" className="text-xs">
                                 {specialty}
                               </Badge>
                             ))}
-                            {hospital.speciality.length > 2 && (
+                            {parseSpecialities(hospital.speciality).length > 2 && (
                               <Badge variant="outline" className="text-xs">
-                                +{hospital.speciality.length - 2} more
+                                +{parseSpecialities(hospital.speciality).length - 2} more
                               </Badge>
                             )}
                           </div>
@@ -272,11 +288,11 @@ const HospitalTracker = () => {
                       </div>
                     </div>
                     
-                    {selectedHospital.speciality && selectedHospital.speciality.length > 0 && (
+                    {selectedHospital.speciality && parseSpecialities(selectedHospital.speciality).length > 0 && (
                       <div>
                         <h3 className="text-sm text-muted-foreground mb-2">Specialties</h3>
                         <div className="flex flex-wrap gap-2">
-                          {selectedHospital.speciality.map((specialty, index) => (
+                          {parseSpecialities(selectedHospital.speciality).map((specialty, index) => (
                             <Badge key={index} className="bg-white/10 hover:bg-white/20 text-foreground">
                               {specialty}
                             </Badge>

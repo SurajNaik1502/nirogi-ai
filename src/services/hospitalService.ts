@@ -13,7 +13,7 @@ export interface Hospital {
   website: string | null;
   latitude: number | null;
   longitude: number | null;
-  speciality: string[] | null;
+  speciality: string | null;
   created_at: string;
   opening_time: string | null;
   closing_time: string | null;
