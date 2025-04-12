@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Consultant from "./pages/Consultant";
@@ -22,77 +23,108 @@ import SkinAnalysis from "./pages/SkinAnalysis";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/consultant" element={
-              <ProtectedRoute>
-                <Consultant />
-              </ProtectedRoute>
-            } />
-            <Route path="/mental-health" element={
-              <ProtectedRoute>
-                <MentalHealth />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } />
-            <Route path="/diet" element={
-              <ProtectedRoute>
-                <Diet />
-              </ProtectedRoute>
-            } />
-            <Route path="/exercise" element={
-              <ProtectedRoute>
-                <Exercise />
-              </ProtectedRoute>
-            } />
-            <Route path="/skin-analysis" element={
-              <ProtectedRoute>
-                <SkinAnalysis />
-              </ProtectedRoute>
-            } />
-            <Route path="/appointments" element={
-              <ProtectedRoute>
-                <Appointments />
-              </ProtectedRoute>
-            } />
-            <Route path="/medicine-tracker" element={
-              <ProtectedRoute>
-                <MedicineTracker />
-              </ProtectedRoute>
-            } />
-            <Route path="/report-analyzer" element={
-              <ProtectedRoute>
-                <ReportAnalyzer />
-              </ProtectedRoute>
-            } />
-            <Route path="/hospital-tracker" element={
-              <ProtectedRoute>
-                <HospitalTracker />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  useEffect(() => {
+    // Check if there's a stored theme preference
+    const storedTheme = localStorage.getItem('theme');
+    const prefersDark = storedTheme === 'dark' || 
+      (storedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    // Apply theme based on preference
+    if (prefersDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Listen for theme change events
+    const handleThemeChange = (e: CustomEvent) => {
+      if (e.detail?.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    window.addEventListener('themechange', handleThemeChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('themechange', handleThemeChange as EventListener);
+    };
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/consultant" element={
+                <ProtectedRoute>
+                  <Consultant />
+                </ProtectedRoute>
+              } />
+              <Route path="/mental-health" element={
+                <ProtectedRoute>
+                  <MentalHealth />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/diet" element={
+                <ProtectedRoute>
+                  <Diet />
+                </ProtectedRoute>
+              } />
+              <Route path="/exercise" element={
+                <ProtectedRoute>
+                  <Exercise />
+                </ProtectedRoute>
+              } />
+              <Route path="/skin-analysis" element={
+                <ProtectedRoute>
+                  <SkinAnalysis />
+                </ProtectedRoute>
+              } />
+              <Route path="/appointments" element={
+                <ProtectedRoute>
+                  <Appointments />
+                </ProtectedRoute>
+              } />
+              <Route path="/medicine-tracker" element={
+                <ProtectedRoute>
+                  <MedicineTracker />
+                </ProtectedRoute>
+              } />
+              <Route path="/report-analyzer" element={
+                <ProtectedRoute>
+                  <ReportAnalyzer />
+                </ProtectedRoute>
+              } />
+              <Route path="/hospital-tracker" element={
+                <ProtectedRoute>
+                  <HospitalTracker />
+                </ProtectedRoute>
+              } />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

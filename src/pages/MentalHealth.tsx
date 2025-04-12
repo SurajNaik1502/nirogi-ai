@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { 
@@ -12,15 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BookText, 
-  Music, 
-  AlarmClock,
-  Calendar,
   Brain,
   Smile,
   Meh,
   Frown,
-  Play,
-  Pause,
   SmilePlus,
   Angry,
   AlertCircle
@@ -39,11 +35,12 @@ import {
   fetchJournalEntries
 } from '@/services/journalService';
 import { format, formatDistanceToNow } from 'date-fns';
+import BreathingExercise from '@/components/mental-health/BreathingExercise';
+import RelaxationMusic from '@/components/mental-health/RelaxationMusic';
 
 const MentalHealth: React.FC = () => {
   const [journalEntry, setJournalEntry] = useState('');
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [canSelectMood, setCanSelectMood] = useState(true);
   const [moodTimeRemaining, setMoodTimeRemaining] = useState<string | null>(null);
   const [lastEntry, setLastEntry] = useState<MoodEntry | null>(null);
@@ -155,10 +152,6 @@ const MentalHealth: React.FC = () => {
         variant: "destructive"
       });
     }
-  };
-
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
   };
 
   const getMoodIcon = (mood: string) => {
@@ -300,7 +293,7 @@ const MentalHealth: React.FC = () => {
               <Card className="glass-morphism">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-health-blue" />
+                    <BookText className="h-5 w-5 text-health-blue" />
                     Recent Journal Entries
                   </CardTitle>
                   <CardDescription>Your previous thoughts and reflections</CardDescription>
@@ -326,107 +319,11 @@ const MentalHealth: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="breathing" className="pt-4">
-            <Card className="glass-morphism">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlarmClock className="h-5 w-5 text-health-blue" />
-                  Breathing Exercise
-                </CardTitle>
-                <CardDescription>Follow the animation to practice deep breathing</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center py-8">
-                  <div className="relative w-40 h-40 mb-8">
-                    <div className="absolute inset-0 bg-health-purple/20 rounded-full"></div>
-                    <div className="absolute inset-0 border-2 border-health-purple rounded-full animate-breathe"></div>
-                    <div className="absolute inset-0 flex items-center justify-center text-center">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Breathe in</p>
-                        <p className="text-sm text-muted-foreground">Hold</p>
-                        <p className="text-sm text-muted-foreground">Breathe out</p>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-center text-sm max-w-md text-muted-foreground">
-                    Breathe in for 4 seconds, hold for 2 seconds, and exhale for 6 seconds. 
-                    Repeat this exercise for 5 minutes to reduce stress and anxiety.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <BreathingExercise />
           </TabsContent>
           
           <TabsContent value="relaxation" className="pt-4">
-            <Card className="glass-morphism">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Music className="h-5 w-5 text-health-orange" />
-                  Relaxation Music
-                </CardTitle>
-                <CardDescription>Listen to calming sounds to reduce stress</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card className="neo-blur">
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="bg-gradient-to-r from-health-blue to-health-purple h-16 w-16 rounded-md flex items-center justify-center">
-                        {isPlaying ? (
-                          <Pause 
-                            className="h-8 w-8 text-white" 
-                            onClick={togglePlay} 
-                          />
-                        ) : (
-                          <Play 
-                            className="h-8 w-8 text-white" 
-                            onClick={togglePlay} 
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Calm Forest Sounds</h3>
-                        <p className="text-sm text-muted-foreground">5:32</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="neo-blur">
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="bg-gradient-to-r from-health-pink to-health-purple h-16 w-16 rounded-md flex items-center justify-center">
-                        <Play className="h-8 w-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Ocean Waves</h3>
-                        <p className="text-sm text-muted-foreground">7:15</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="neo-blur">
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="bg-gradient-to-r from-health-orange to-health-pink h-16 w-16 rounded-md flex items-center justify-center">
-                        <Play className="h-8 w-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Meditation Music</h3>
-                        <p className="text-sm text-muted-foreground">10:05</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="neo-blur">
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="bg-gradient-to-r from-health-blue to-health-orange h-16 w-16 rounded-md flex items-center justify-center">
-                        <Play className="h-8 w-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Rain Sounds</h3>
-                        <p className="text-sm text-muted-foreground">8:45</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+            <RelaxationMusic />
           </TabsContent>
         </Tabs>
 

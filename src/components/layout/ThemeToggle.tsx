@@ -4,21 +4,40 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 const ThemeToggle = () => {
-  // We'll default to dark theme
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
-    // Set dark mode by default
-    document.documentElement.classList.add('dark');
+    // Check if there's a stored theme preference
+    const storedTheme = localStorage.getItem('theme');
+    const prefersDark = storedTheme === 'dark' || 
+      (storedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    setIsDarkMode(prefersDark);
+    
+    // Apply theme based on preference
+    if (prefersDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, []);
 
   const toggleTheme = () => {
+    const newTheme = !isDarkMode ? 'dark' : 'light';
     setIsDarkMode(!isDarkMode);
-    if (isDarkMode) {
-      document.documentElement.classList.remove('dark');
-    } else {
+    
+    // Store user preference
+    localStorage.setItem('theme', newTheme);
+    
+    // Apply theme change
+    if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
+
+    // Dispatch event so other components can react to theme change
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: newTheme } }));
   };
 
   return (
