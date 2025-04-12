@@ -287,8 +287,8 @@ const Appointments = () => {
                           </FormControl>
                           <SelectContent>
                             {hospitals.map(hospital => (
-                              <SelectItem key={hospital.id} value={hospital.name}>
-                                {hospital.name}
+                              <SelectItem key={hospital.id} value={hospital.hospital_name}>
+                                {hospital.hospital_name}
                               </SelectItem>
                             ))}
                             <SelectItem value="other">Other</SelectItem>
