@@ -3,8 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Phone, Mail, Globe, Clock, Hospital as HospitalIcon, Bed, Building2, Star } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Clock, Hospital as HospitalIcon, Bed, Building2, Star, PhoneCall } from 'lucide-react';
 import { Hospital } from '@/services/hospitalService';
+import HospitalMap from './HospitalMap';
+import { toast } from 'sonner';
 
 interface HospitalDetailProps {
   hospital: Hospital | null;
@@ -12,6 +14,15 @@ interface HospitalDetailProps {
 }
 
 const HospitalDetail = ({ hospital, parseSpecialities }: HospitalDetailProps) => {
+  const handleCallNow = () => {
+    if (hospital?.phone) {
+      window.location.href = `tel:${hospital.phone}`;
+      toast.success('Calling hospital...');
+    } else {
+      toast.error('No phone number available for this hospital');
+    }
+  };
+
   if (!hospital) {
     return (
       <Card className="glass-morphism h-full">
@@ -90,16 +101,30 @@ const HospitalDetail = ({ hospital, parseSpecialities }: HospitalDetailProps) =>
                     <span>Beds available: {hospital.beds_available}</span>
                   </div>
                 )}
+
+                <Button 
+                  onClick={handleCallNow} 
+                  className="w-full mt-4" 
+                  disabled={!hospital.phone}
+                  variant="default"
+                >
+                  <PhoneCall className="mr-2 h-4 w-4" />
+                  Call Now
+                </Button>
               </div>
             </div>
             
-            <div className="rounded-md overflow-hidden aspect-video bg-black/20 flex items-center justify-center">
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-                <div className="text-center">
-                  <HospitalIcon className="h-12 w-12 mx-auto text-health-blue opacity-70 mb-2" />
-                  <p className="text-sm">Hospital Location</p>
+            <div className="rounded-md overflow-hidden">
+              {hospital.latitude && hospital.longitude ? (
+                <HospitalMap hospital={hospital} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 aspect-video">
+                  <div className="text-center">
+                    <HospitalIcon className="h-12 w-12 mx-auto text-health-blue opacity-70 mb-2" />
+                    <p className="text-sm">No location data available</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
           

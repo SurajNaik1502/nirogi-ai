@@ -20,20 +20,27 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const healthScore = 82;
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const firstName = user?.user_metadata?.first_name || user?.user_metadata?.firstName || 'User';
+
   return (
     <Layout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back, User</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back, {firstName}</h1>
           <p className="text-muted-foreground mt-1">Here's an overview of your health status.</p>
         </div>
         
+        {/* Health Score */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Health Score */}
           <Card className="glass-morphism col-span-1">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2">
@@ -86,19 +93,35 @@ const Dashboard: React.FC = () => {
               <CardDescription>Access key features</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
-              <Button variant="secondary" className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center">
+              <Button 
+                variant="secondary" 
+                className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center"
+                onClick={() => navigate('/consultant')}
+              >
                 <MessageCircle className="h-5 w-5 mb-1" />
                 <span className="text-xs">Consult AI</span>
               </Button>
-              <Button variant="secondary" className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center">
+              <Button 
+                variant="secondary" 
+                className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center"
+                onClick={() => navigate('/mental-health')}
+              >
                 <Brain className="h-5 w-5 mb-1" />
                 <span className="text-xs">Mental Check</span>
               </Button>
-              <Button variant="secondary" className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center">
+              <Button 
+                variant="secondary" 
+                className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center"
+                onClick={() => navigate('/diet')}
+              >
                 <PieChart className="h-5 w-5 mb-1" />
                 <span className="text-xs">Diet Plan</span>
               </Button>
-              <Button variant="secondary" className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center">
+              <Button 
+                variant="secondary" 
+                className="flex flex-col h-auto py-4 gap-y-1 items-center justify-center"
+                onClick={() => navigate('/appointments')}
+              >
                 <Calendar className="h-5 w-5 mb-1" />
                 <span className="text-xs">Appointments</span>
               </Button>
