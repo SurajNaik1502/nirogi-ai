@@ -35,7 +35,7 @@ const Dashboard: React.FC = () => {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back, {firstName}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back {firstName}</h1>
           <p className="text-muted-foreground mt-1">Here's an overview of your health status.</p>
         </div>
         
