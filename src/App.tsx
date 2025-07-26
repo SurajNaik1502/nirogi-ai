@@ -27,8 +27,7 @@ const App = () => {
   useEffect(() => {
     // Check if there's a stored theme preference
     const storedTheme = localStorage.getItem('theme');
-    const prefersDark = storedTheme === 'dark' || 
-      (storedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const prefersDark = storedTheme === 'dark';
 
     // Apply theme based on preference
     if (prefersDark) {
