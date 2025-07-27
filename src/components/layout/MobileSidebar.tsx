@@ -27,12 +27,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-        onClick={onClose}
-      />
-      <div className="fixed inset-y-0 left-0 w-72 bg-black border-r border-border z-50 animate-in slide-in-from-left shadow-xl">
+    <div className="fixed inset-0 w-full h-full bg-black z-50 animate-in slide-in-from-left">
         <div className="flex items-center justify-between p-4">
           <span className="health-gradient text-xl font-bold">HealthGlow Nexus</span>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -120,8 +115,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 };
 
