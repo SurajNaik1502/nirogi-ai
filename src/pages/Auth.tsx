@@ -3,7 +3,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -67,28 +74,34 @@ const Auth = () => {
                 <Heart className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="health-gradient text-4xl font-bold mb-2">HealthGlow Nexus</h1>
-            <p className="text-white/80 text-lg">Your wellness journey starts here</p>
+            <h1 className="health-gradient text-4xl font-bold mb-2">
+              HealthGlow Nexus
+            </h1>
+            <p className="text-white/80 text-lg">
+              Your wellness journey starts here
+            </p>
           </div>
 
           {/* Main auth card */}
           <Card className="auth-card border-0">
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-white text-2xl font-bold">Welcome</CardTitle>
+              <CardTitle className="text-white text-2xl font-bold">
+                Welcome
+              </CardTitle>
               <CardDescription className="text-white/70">
                 Access your personalized health dashboard
               </CardDescription>
             </CardHeader>
 
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mx-6 bg-white/10 border border-white/20">
-                <TabsTrigger 
-                  value="signin" 
+              <TabsList className="grid w-full grid-cols-2 bg-white/10 border border-white/20">
+                <TabsTrigger
+                  value="signin"
                   className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70"
                 >
                   Sign In
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="signup"
                   className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70"
                 >
@@ -100,7 +113,9 @@ const Auth = () => {
                 <TabsContent value="signin" className="space-y-4">
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-white/90">Email</Label>
+                      <Label htmlFor="email" className="text-white/90">
+                        Email
+                      </Label>
                       <Input
                         id="email"
                         type="email"
@@ -112,7 +127,9 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-white/90">Password</Label>
+                      <Label htmlFor="password" className="text-white/90">
+                        Password
+                      </Label>
                       <Input
                         id="password"
                         type="password"
@@ -123,10 +140,10 @@ const Auth = () => {
                         required
                       />
                     </div>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       variant="premium"
-                      className="w-full mt-6" 
+                      className="w-full mt-6"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -148,7 +165,9 @@ const Auth = () => {
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-white/90">First Name</Label>
+                        <Label htmlFor="firstName" className="text-white/90">
+                          First Name
+                        </Label>
                         <Input
                           id="firstName"
                           value={firstName}
@@ -159,7 +178,9 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-white/90">Last Name</Label>
+                        <Label htmlFor="lastName" className="text-white/90">
+                          Last Name
+                        </Label>
                         <Input
                           id="lastName"
                           value={lastName}
@@ -171,7 +192,9 @@ const Auth = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-white/90">Email</Label>
+                      <Label htmlFor="email" className="text-white/90">
+                        Email
+                      </Label>
                       <Input
                         id="email"
                         type="email"
@@ -183,7 +206,9 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-white/90">Password</Label>
+                      <Label htmlFor="password" className="text-white/90">
+                        Password
+                      </Label>
                       <Input
                         id="password"
                         type="password"
@@ -194,10 +219,10 @@ const Auth = () => {
                         required
                       />
                     </div>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       variant="premium"
-                      className="w-full mt-6" 
+                      className="w-full mt-6"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -228,7 +253,8 @@ const Auth = () => {
                 <span>•</span>
               </div>
               <p className="text-xs text-center text-white/50 mt-3">
-                By continuing, you agree to our Terms of Service and Privacy Policy.
+                By continuing, you agree to our Terms of Service and Privacy
+                Policy.
               </p>
             </CardFooter>
           </Card>
