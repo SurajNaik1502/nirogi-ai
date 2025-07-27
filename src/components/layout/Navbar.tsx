@@ -1,13 +1,12 @@
-
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Menu, X, Bell, Settings, User, LogOut } from 'lucide-react';
-import MobileSidebar from './MobileSidebar';
-import ThemeToggle from './ThemeToggle';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Menu, X, Bell, Settings, User, LogOut } from "lucide-react";
+import MobileSidebar from "./MobileSidebar";
+import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 const Navbar: React.FC = () => {
   const isMobile = useIsMobile();
@@ -25,11 +24,11 @@ const Navbar: React.FC = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    navigate("/auth");
   };
 
   const handleProfile = () => {
-    navigate('/profile');
+    navigate("/profile");
   };
 
   return (
@@ -37,42 +36,51 @@ const Navbar: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-x-4">
           {isMobile && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsMobileMenuOpen(true)}
               className="text-foreground"
             >
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          
+
           <div className="flex items-center">
-            <span className="health-gradient text-xl font-bold cursor-pointer" onClick={() => navigate('/')}>
-              HealthGlow Nexus
+            <span
+              className="health-gradient text-xl font-bold cursor-pointer"
+              onClick={() => navigate("/")}
+            >
+              NIROGI-AI
             </span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-x-2">
           <Button variant="ghost" size="icon" className="text-foreground">
             <Bell className="h-5 w-5" />
           </Button>
-          
+
           <ThemeToggle />
-          
+
           <Button variant="ghost" size="icon" className="text-foreground">
             <Settings className="h-5 w-5" />
           </Button>
-          
+
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="text-xs">
-                      {user.user_metadata?.first_name?.[0] || user.email?.[0].toUpperCase() || 'U'}
+                      {user.user_metadata?.first_name?.[0] ||
+                        user.email?.[0].toUpperCase() ||
+                        "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -91,17 +99,17 @@ const Navbar: React.FC = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="outline" onClick={() => navigate('/auth')}>
+            <Button variant="outline" onClick={() => navigate("/auth")}>
               Sign In
             </Button>
           )}
         </div>
       </div>
-      
+
       {isMobile && (
-        <MobileSidebar 
-          isOpen={isMobileMenuOpen} 
-          onClose={() => setIsMobileMenuOpen(false)} 
+        <MobileSidebar
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
         />
       )}
     </nav>

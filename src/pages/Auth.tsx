@@ -75,7 +75,7 @@ const Auth = () => {
               </div>
             </div>
             <h1 className="health-gradient text-4xl font-bold mb-2">
-              HealthGlow Nexus
+              NIROGI-AI
             </h1>
             <p className="text-white/80 text-lg">
               Your wellness journey starts here
