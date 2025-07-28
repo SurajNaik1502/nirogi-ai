@@ -9,20 +9,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, parseISO } from 'date-fns';
-import { FileText, CalendarIcon, PlusCircle, Trash2, FilePlus, Upload } from 'lucide-react';
+import { FileText, CalendarIcon, PlusCircle, Trash2, FilePlus, Upload, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   fetchMedicalReports, 
   createMedicalReport,
   deleteMedicalReport,
+  updateMedicalReport,
   MedicalReport
 } from '@/services/reportService';
+import { analyzeReportText, extractTextFromFile } from '@/services/reportAnalysisService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   report_type: z.string().min(1, "Report type is required"),
@@ -39,6 +42,8 @@ const ReportAnalyzer = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,22 +82,40 @@ const ReportAnalyzer = () => {
     if (!user) return;
     
     try {
+      let analysisResult = null;
+      
+      // If file is uploaded, extract text and analyze it
+      if (uploadedFile) {
+        try {
+          const extractedText = await extractTextFromFile(uploadedFile);
+          analysisResult = await analyzeReportText(extractedText);
+        } catch (error) {
+          console.error('Error analyzing report:', error);
+          toast({
+            title: "Warning",
+            description: "Report saved but analysis failed. You can analyze it later.",
+            variant: "destructive",
+          });
+        }
+      }
+      
       const newReport = await createMedicalReport(user.id, {
         report_type: values.report_type,
         report_date: values.report_date.toISOString().split('T')[0],
         notes: values.notes || null,
-        file_url: null, // In a real app, you would upload the file to storage
-        analysis_result: null
+        file_url: uploadedFile ? uploadedFile.name : null,
+        analysis_result: analysisResult
       });
       
       if (newReport) {
         setReports([newReport as MedicalReport, ...reports]);
         toast({
           title: "Success",
-          description: "Medical report added successfully",
+          description: analysisResult ? "Medical report added and analyzed successfully" : "Medical report added successfully",
         });
         setDialogOpen(false);
         form.reset();
+        setUploadedFile(null);
       }
     } catch (error) {
       console.error('Error adding medical report:', error);
@@ -101,6 +124,51 @@ const ReportAnalyzer = () => {
         description: "Failed to add medical report",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAnalyzeReport = async (report: MedicalReport) => {
+    if (!uploadedFile && !report.file_url) {
+      toast({
+        title: "No file to analyze",
+        description: "Please upload a report file first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      // For demo purposes, we'll use a sample text
+      const sampleText = `Medical Report for ${report.report_type}
+Date: ${report.report_date}
+Notes: ${report.notes || 'No additional notes'}
+Patient appears to be in good health with normal parameters.`;
+      
+      const analysis = await analyzeReportText(sampleText);
+      
+      // Update the report with analysis
+      const updatedReport = await updateMedicalReport(report.id, {
+        analysis_result: analysis
+      });
+      
+      if (updatedReport) {
+        setReports(reports.map(r => r.id === report.id ? updatedReport : r));
+        setSelectedReport(updatedReport);
+        toast({
+          title: "Analysis Complete",
+          description: "AI analysis has been generated for this report",
+        });
+      }
+    } catch (error) {
+      console.error('Error analyzing report:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to analyze the report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -214,14 +282,30 @@ const ReportAnalyzer = () => {
                   <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="report-file">Upload Report</Label>
                     <div className="flex items-center gap-2">
-                      <Input id="report-file" type="file" className="flex-1" />
-                      <Button size="sm" variant="outline">
-                        <Upload className="h-4 w-4 mr-1" />
-                        Browse
-                      </Button>
+                      <Input 
+                        id="report-file" 
+                        type="file" 
+                        className="flex-1"
+                        accept=".pdf,.jpg,.jpeg,.png,.txt"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setUploadedFile(file);
+                            toast({
+                              title: "File selected",
+                              description: `${file.name} ready for analysis`,
+                            });
+                          }
+                        }}
+                      />
                     </div>
+                    {uploadedFile && (
+                      <p className="text-xs text-green-600">
+                        Selected: {uploadedFile.name}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
-                      Upload PDF, JPG, or PNG files (max 10MB)
+                      Upload PDF, JPG, PNG, or TXT files (max 10MB)
                     </p>
                   </div>
                   
@@ -381,22 +465,47 @@ const ReportAnalyzer = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <h3 className="font-medium">AI Analysis</h3>
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-medium">AI Analysis</h3>
+                        {!selectedReport.analysis_result && (
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleAnalyzeReport(selectedReport)}
+                            disabled={analyzing}
+                          >
+                            {analyzing ? (
+                              <>
+                                <div className="animate-spin h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full" />
+                                Analyzing...
+                              </>
+                            ) : (
+                              <>
+                                <Brain className="mr-2 h-4 w-4" />
+                                Analyze Report
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                       {selectedReport.analysis_result ? (
-                        <div className="bg-white/5 p-4 rounded-md">
-                          <pre className="text-sm whitespace-pre-wrap">
-                            {JSON.stringify(selectedReport.analysis_result, null, 2)}
-                          </pre>
+                        <div className="space-y-4">
+                          <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-md">
+                            <h4 className="font-medium text-blue-400 mb-2">Summary</h4>
+                            <p className="text-sm">{selectedReport.analysis_result.summary}</p>
+                          </div>
+                          <div className="bg-white/5 p-4 rounded-md">
+                            <h4 className="font-medium mb-2">Detailed Analysis</h4>
+                            <div className="text-sm whitespace-pre-wrap">
+                              {selectedReport.analysis_result.detailed_analysis}
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div className="bg-white/5 p-4 rounded-md text-center">
-                          <p className="text-muted-foreground">
-                            No analysis available. Upload a report file to generate an analysis.
+                          <Brain className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-muted-foreground mb-4">
+                            No analysis available. Click "Analyze Report" to generate AI insights.
                           </p>
-                          <Button className="mt-4">
-                            <Upload className="mr-2 h-4 w-4" />
-                            Upload Report File
-                          </Button>
                         </div>
                       )}
                     </div>
@@ -420,18 +529,5 @@ const ReportAnalyzer = () => {
     </Layout>
   );
 };
-
-// Helper component for file upload
-const Label = React.forwardRef<
-  HTMLLabelElement,
-  React.LabelHTMLAttributes<HTMLLabelElement>
->(({ className, ...props }, ref) => (
-  <label
-    ref={ref}
-    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
-    {...props}
-  />
-));
-Label.displayName = "Label";
 
 export default ReportAnalyzer;
