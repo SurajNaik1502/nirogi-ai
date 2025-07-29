@@ -9,10 +9,10 @@ from analyzer import analyze_report_text
 
 app = FastAPI()
 
-# Enable CORS (for testing, allow all origins; restrict in production)
+# Enable CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to your frontend URL in production
+    allow_origins=["*"],  # Change to your frontend domain in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,30 +27,23 @@ async def upload_report(
     report_date: str = Form(...),
     file: UploadFile = Form(...)
 ):
-    # Save uploaded file
     file_location = os.path.join(UPLOAD_FOLDER, file.filename)
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Extract text based on file type
-    filename_lower = file.filename.lower()
-    if filename_lower.endswith(".pdf"):
+    if file.filename.lower().endswith(".pdf"):
         text = extract_text_from_pdf(file_location)
-    elif filename_lower.endswith((".png", ".jpg", ".jpeg")):
+    elif file.filename.lower().endswith((".png", ".jpg", ".jpeg")):
         text = extract_text_from_image(file_location)
     else:
-        return {"error": "Unsupported file format. Please upload PDF, PNG, JPG, or JPEG."}
+        return {"error": "Unsupported file format"}
 
-    # Run AI analysis
     analysis = analyze_report_text(text)
 
     return {
         "report_type": report_type,
         "report_date": report_date,
         "summary": analysis["summary"],
-        "detailed_analysis": analysis["detailed_analysis"]
+        "detailed_analysis": analysis["detailed_analysis"],
     }
-    
-    
-    
 
