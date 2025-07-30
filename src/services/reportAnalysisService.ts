@@ -12,7 +12,7 @@ export async function uploadAndAnalyzeReport(
   formData.append("file", file);
   formData.append("report_type", reportType);
   formData.append("report_date", reportDate);
-
+  // Replace with your backend URL
   const response = await fetch("http://localhost:8000/upload-report/", {
     method: "POST",
     body: formData,
