@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, parseISO, isToday } from 'date-fns';
-import { Pill, Clock, Calendar as CalendarIcon, CheckCircle, PlusCircle, Trash2 } from 'lucide-react';
+import { Pill, Clock, Calendar as CalendarIcon, CheckCircle, PlusCircle, Trash2, Bell, BellOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   fetchMedications, 
@@ -18,6 +18,8 @@ import {
   deleteMedication,
   Medication
 } from '@/services/medicationService';
+import { notificationService, CustomNotificationData } from '@/services/notificationService';
+import { CustomNotificationDialog } from '@/components/medication/CustomNotificationDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,6 +45,8 @@ const MedicineTracker = () => {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [pendingAsNeededMedication, setPendingAsNeededMedication] = useState<Medication | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,7 +81,27 @@ const MedicineTracker = () => {
 
   useEffect(() => {
     loadMedications();
+    initializeNotifications();
   }, [user]);
+
+  const initializeNotifications = async () => {
+    const hasPermission = await notificationService.requestPermission();
+    setNotificationsEnabled(hasPermission);
+    
+    if (hasPermission) {
+      notificationService.loadNotificationsFromStorage();
+    }
+  };
+
+  const setupNotificationForMedication = (medication: Medication, customData?: CustomNotificationData) => {
+    if (notificationsEnabled) {
+      notificationService.setupMedicationNotifications(medication, customData);
+      toast({
+        title: "Notifications Set",
+        description: `Reminders scheduled for ${medication.name}`,
+      });
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
@@ -93,7 +117,16 @@ const MedicineTracker = () => {
       });
       
       if (newMedication) {
-        setMedications([newMedication as Medication, ...medications]);
+        const medication = newMedication as Medication;
+        setMedications([medication, ...medications]);
+        
+        // Handle notifications based on frequency
+        if (medication.frequency === 'as-needed') {
+          setPendingAsNeededMedication(medication);
+        } else {
+          setupNotificationForMedication(medication);
+        }
+        
         toast({
           title: "Success",
           description: "Medication added successfully",
@@ -132,6 +165,7 @@ const MedicineTracker = () => {
   const handleDeleteMedication = async (id: string) => {
     try {
       await deleteMedication(id);
+      notificationService.clearNotifications(id);
       setMedications(medications.filter(med => med.id !== id));
       toast({
         title: "Success",
@@ -147,6 +181,34 @@ const MedicineTracker = () => {
     }
   };
 
+  const handleCustomNotificationSave = (data: CustomNotificationData) => {
+    if (pendingAsNeededMedication) {
+      setupNotificationForMedication(pendingAsNeededMedication, data);
+      setPendingAsNeededMedication(null);
+    }
+  };
+
+  const toggleNotifications = async () => {
+    if (!notificationsEnabled) {
+      const hasPermission = await notificationService.requestPermission();
+      if (hasPermission) {
+        setNotificationsEnabled(true);
+        // Re-setup notifications for all medications
+        medications.forEach(med => {
+          if (med.frequency !== 'as-needed') {
+            setupNotificationForMedication(med);
+          }
+        });
+      }
+    } else {
+      setNotificationsEnabled(false);
+      // Clear all notifications
+      medications.forEach(med => {
+        notificationService.clearNotifications(med.id);
+      });
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -154,107 +216,49 @@ const MedicineTracker = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Medicine Tracker</h1>
             <p className="text-muted-foreground mt-1">
-              Track and manage your medications
+              Track and manage your medications with smart reminders
             </p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Medication
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Medication</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Medication Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Aspirin" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="dosage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Dosage</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 100mg" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="frequency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Frequency</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select frequency" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="twice-daily">Twice daily</SelectItem>
-                            <SelectItem value="every-other-day">Every other day</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="as-needed">As needed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={toggleNotifications}
+              className="flex items-center gap-2"
+            >
+              {notificationsEnabled ? (
+                <>
+                  <Bell className="h-4 w-4" />
+                  Notifications On
+                </>
+              ) : (
+                <>
+                  <BellOff className="h-4 w-4" />
+                  Enable Notifications
+                </>
+              )}
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Medication
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Medication</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                     <FormField
                       control={form.control}
-                      name="start_date"
+                      name="name"
                       render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Start Date</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className="w-full pl-3 text-left font-normal"
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                        <FormItem>
+                          <FormLabel>Medication Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Aspirin" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -262,66 +266,148 @@ const MedicineTracker = () => {
                     
                     <FormField
                       control={form.control}
-                      name="end_date"
+                      name="dosage"
                       render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>End Date (Optional)</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className="w-full pl-3 text-left font-normal"
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value || undefined}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                        <FormItem>
+                          <FormLabel>Dosage</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., 100mg" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notes (Optional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Any additional information"
-                            className="resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button type="submit" className="w-full">
-                    Add Medication
-                  </Button>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+                    
+                    <FormField
+                      control={form.control}
+                      name="frequency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Frequency</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="twice-daily">Twice daily</SelectItem>
+                              <SelectItem value="every-other-day">Every other day</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="as-needed">As needed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                          {form.watch('frequency') === 'as-needed' && (
+                            <p className="text-xs text-muted-foreground">
+                              You'll be able to set custom notification times after adding the medication.
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="start_date"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Start Date</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full pl-3 text-left font-normal"
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="end_date"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>End Date (Optional)</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full pl-3 text-left font-normal"
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value || undefined}
+                                  onSelect={field.onChange}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notes (Optional)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Any additional information"
+                              className="resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button type="submit" className="w-full">
+                      Add Medication
+                    </Button>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         
         <Tabs defaultValue="active">
@@ -331,6 +417,19 @@ const MedicineTracker = () => {
           </TabsList>
           
           <TabsContent value="active" className="space-y-4 pt-4">
+            {notificationsEnabled && (
+              <Card className="glass-morphism border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Bell className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Smart Notifications Enabled</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    • Twice daily: 1:00 PM & 9:00 PM • Daily: 8:00 PM • Weekly: Mondays at 8:00 PM
+                  </p>
+                </CardContent>
+              </Card>
+            )}
             {loading ? (
               <Card className="glass-morphism">
                 <CardContent className="p-6 text-center">
@@ -403,16 +502,45 @@ const MedicineTracker = () => {
                         {medication.notes && (
                           <p className="text-sm mt-2 text-muted-foreground">{medication.notes}</p>
                         )}
+                        
+                        {/* Notification Status */}
+                        <div className="flex items-center gap-2 text-xs mt-2">
+                          {notificationsEnabled && notificationService.getNotificationSettings(medication.id) ? (
+                            <>
+                              <Bell className="h-3 w-3 text-green-500" />
+                              <span className="text-green-500">Notifications active</span>
+                            </>
+                          ) : (
+                            <>
+                              <BellOff className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">No notifications</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                       
-                      <Button
-                        className="w-full mt-4"
-                        variant="default"
-                        onClick={() => handleLogMedication(medication)}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Mark as Taken
-                      </Button>
+                      <div className="space-y-2 mt-4">
+                        <Button
+                          className="w-full"
+                          variant="default"
+                          onClick={() => handleLogMedication(medication)}
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Mark as Taken
+                        </Button>
+                        
+                        {medication.frequency === 'as-needed' && (
+                          <CustomNotificationDialog
+                            onSave={handleCustomNotificationSave}
+                            trigger={
+                              <Button variant="outline" className="w-full">
+                                <Clock className="mr-2 h-4 w-4" />
+                                Set Reminder
+                              </Button>
+                            }
+                          />
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -464,6 +592,14 @@ const MedicineTracker = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Custom Notification Dialog for As-Needed Medications */}
+        {pendingAsNeededMedication && (
+          <CustomNotificationDialog
+            onSave={handleCustomNotificationSave}
+            trigger={<div style={{ display: 'none' }} />}
+          />
+        )}
       </div>
     </Layout>
   );
