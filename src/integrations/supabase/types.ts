@@ -552,45 +552,7 @@ export type Database = {
       }
     }
     Views: {
-      hospitals_public: {
-        Row: {
-          address: string | null
-          beds_available: string | null
-          city: string | null
-          closing_time: string | null
-          created_at: string | null
-          hospital_name: string | null
-          id: string | null
-          opening_time: string | null
-          speciality: string | null
-          state: string | null
-        }
-        Insert: {
-          address?: string | null
-          beds_available?: string | null
-          city?: string | null
-          closing_time?: string | null
-          created_at?: string | null
-          hospital_name?: string | null
-          id?: string | null
-          opening_time?: string | null
-          speciality?: string | null
-          state?: string | null
-        }
-        Update: {
-          address?: string | null
-          beds_available?: string | null
-          city?: string | null
-          closing_time?: string | null
-          created_at?: string | null
-          hospital_name?: string | null
-          id?: string | null
-          opening_time?: string | null
-          speciality?: string | null
-          state?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never

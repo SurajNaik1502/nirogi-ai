@@ -44,13 +44,13 @@ const HospitalDetail = ({ hospital, parseSpecialities }: HospitalDetailProps) =>
       <CardContent>
         <div className="space-y-6">
           <div className="space-y-4">
-            <div>
-              <h3 className="text-sm text-muted-foreground">Address</h3>
-              <p className="font-medium">
-                {hospital.address}<br />
-                {hospital.city}{hospital.state ? `, ${hospital.state}` : ''} {hospital.postal_code || ''}
-              </p>
-            </div>
+              <div>
+                <h3 className="text-sm text-muted-foreground">Address</h3>
+                <p className="font-medium">
+                  {hospital.address}<br />
+                  {hospital.city}{hospital.state ? `, ${hospital.state}` : ''}
+                </p>
+              </div>
             
             <div className="space-y-2">
               {hospital.phone && (
@@ -71,14 +71,6 @@ const HospitalDetail = ({ hospital, parseSpecialities }: HospitalDetailProps) =>
                 </div>
               )}
               
-              {hospital.website && (
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                  <a href={hospital.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    Visit Website
-                  </a>
-                </div>
-              )}
               
               {(hospital.opening_time || hospital.closing_time) && (
                 <div className="flex items-center gap-2">
